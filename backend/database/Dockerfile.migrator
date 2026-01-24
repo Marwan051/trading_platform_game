@@ -1,0 +1,8 @@
+FROM ghcr.io/pressly/goose/goose:latest
+
+WORKDIR /migrations
+
+COPY migrations/*.sql ./
+
+ENTRYPOINT ["goose"]
+CMD ["up"]
