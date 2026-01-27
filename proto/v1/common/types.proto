@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package common.types;
+
+option go_package = "github.com/Marwan051/tradding_platform_game/proto/gen/go/v1/common";
+
+
+// OrderType specifies the type of order.
+enum OrderType {
+  ORDER_TYPE_UNSPECIFIED = 0;
+  MARKET = 1;
+  LIMIT = 2;
+}
+
+// OrderSide specifies whether the order is a buy or sell.
+enum OrderSide {
+  ORDER_SIDE_UNSPECIFIED = 0;
+  BUY = 1;
+  SELL = 2;
+}
+
+// OrderStatus represents the current state of an order.
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  PENDING = 1;
+  PARTIAL = 2;
+  FILLED = 3;
+  CANCELLED = 4;
+  REJECTED = 5;
+}
+
+// ErrorCode represents error reasons returned by services.
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  INSUFFICIENT_FUNDS = 1;
+  INSUFFICIENT_SHARES = 2;
+  INVALID_QUANTITY = 3;
+  INVALID_PRICE = 4;
+  STOCK_NOT_FOUND = 5;
+  STOCK_NOT_TRADING = 6;
+  ORDER_NOT_FOUND = 7;
+  UNAUTHORIZED = 8;
+  RATE_LIMIT_EXCEEDED = 9;
+  MARKET_CLOSED = 10;
+  INTERNAL_ERROR = 11;
+}
+
+// Order is a canonical order representation shared across services.
+message Order {
+  string order_id = 1;
+  string user_id = 2;
+  string bot_id = 3;
+  string stock_id = 4;
+  OrderType order_type = 5;
+  OrderSide side = 6;
+  int64 quantity = 7;
+  int64 filled_quantity = 8;
+  int64 remaining_quantity = 9;
+  int64 limit_price_cents = 10;
+  OrderStatus status = 11;
+  int64 created_at_ms = 12;
+  int64 updated_at_ms = 13;
+  int64 average_fill_price_cents = 14;
+}
+
+// Trade represents an executed trade.
+message Trade {
+  string trade_id = 1;
+  string stock_id = 2;
+  string buyer_order_id = 3;
+  string seller_order_id = 4;
+  string buyer_user_id = 5;
+  string buyer_bot_id = 6;
+  string seller_user_id = 7;
+  string seller_bot_id = 8;
+  int64 quantity = 9;
+  int64 price_cents = 10;
+  int64 total_value_cents = 11;
+  int64 executed_at_ms = 12;
+}
+
+// StockPrice represents current and recent price information for a stock.
+message StockPrice {
+  string stock_id = 1;
+  string ticker = 2;
+  int64 current_price_cents = 3;
+  int64 previous_close_cents = 4;
+  int64 change_cents = 5;
+  int32 change_percent_basis_points = 6;
+  int64 day_high_cents = 7;
+  int64 day_low_cents = 8;
+  int64 day_volume = 9;
+  int64 timestamp_ms = 10;
+}

@@ -8,10 +8,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	pb "github.com/Marwan051/tradding_platform_game/matching_engine/api/proto/v1"
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/config"
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/interceptors"
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/service"
+	pb "github.com/Marwan051/tradding_platform_game/proto/gen/go/v1/matching_engine"
 )
 
 type Server struct {
@@ -32,7 +32,7 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 
 	// Register services
 	matchingService := service.NewMatchingEngineService(logger)
-	pb.RegisterMatchingEngineServiceServer(grpcServer, matchingService)
+	pb.RegisterMatchingEngineServer(grpcServer, matchingService)
 
 	// Enable reflection for development (grpcurl, grpcui)
 	if cfg.Environment == "development" {
