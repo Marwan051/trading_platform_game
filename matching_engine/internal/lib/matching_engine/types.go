@@ -1,9 +1,8 @@
 package matchingengine
 
 import (
+	"container/heap"
 	"container/list"
-	"math"
-	"sort"
 	"sync"
 	"time"
 )
@@ -26,22 +25,22 @@ const (
 
 // Order - The order itself
 type Order struct {
-	orderId    string
-	stock      string
-	orderType  OrderType
-	orderSide  OrderSide
-	quantity   int
-	limitPrice int
-	timestamp  time.Time
+	OrderId    string
+	Stock      string
+	OrderType  OrderType
+	OrderSide  OrderSide
+	Quantity   int
+	LimitPrice int
+	Timestamp  time.Time
 }
 
 // MatchedEvent represents a successful trade between buyer and seller
 type MatchedEvent struct {
-	buyerOrderId       string
-	sellerOrderId      string
-	pricePerStockCents int
-	quantity           int
-	timestamp          time.Time
+	BuyerOrderId       string
+	SellerOrderId      string
+	PricePerStockCents int
+	Quantity           int
+	Timestamp          time.Time
 }
 
 // PriceLevel represents all orders at a specific price
@@ -62,7 +61,7 @@ func NewPriceLevel(price int) *PriceLevel {
 
 // AddOrder adds an order to this price level (appends to end for FIFO)
 func (pl *PriceLevel) AddOrder(order *Order) *list.Element {
-	pl.volume += order.quantity
+	pl.volume += order.Quantity
 	return pl.orders.PushBack(order)
 }
 
@@ -77,7 +76,7 @@ func (pl *PriceLevel) Front() *Order {
 // RemoveOrder removes an order from this price level
 func (pl *PriceLevel) RemoveOrder(element *list.Element) {
 	order := element.Value.(*Order)
-	pl.volume -= order.quantity
+	pl.volume -= order.Quantity
 	pl.orders.Remove(element)
 }
 
@@ -88,7 +87,7 @@ func (pl *PriceLevel) RemoveFront() *Order {
 	}
 	element := pl.orders.Front()
 	order := element.Value.(*Order)
-	pl.volume -= order.quantity
+	pl.volume -= order.Quantity
 	pl.orders.Remove(element)
 	return order
 }
@@ -98,9 +97,49 @@ func (pl *PriceLevel) IsEmpty() bool {
 	return pl.orders.Len() == 0
 }
 
+// PriceHeap implements heap.Interface for price levels
+// For buy side: max-heap (highest price first)
+// For sell side: min-heap (lowest price first)
+type PriceHeap struct {
+	prices    []int
+	isBuySide bool
+}
+
+func (h PriceHeap) Len() int { return len(h.prices) }
+
+func (h PriceHeap) Less(i, j int) bool {
+	if h.isBuySide {
+		return h.prices[i] > h.prices[j] // Max-heap for buy side
+	}
+	return h.prices[i] < h.prices[j] // Min-heap for sell side
+}
+
+func (h PriceHeap) Swap(i, j int) { h.prices[i], h.prices[j] = h.prices[j], h.prices[i] }
+
+func (h *PriceHeap) Push(x any) {
+	h.prices = append(h.prices, x.(int))
+}
+
+func (h *PriceHeap) Pop() any {
+	old := h.prices
+	n := len(old)
+	x := old[n-1]
+	h.prices = old[0 : n-1]
+	return x
+}
+
+// Peek returns the best price without removing it
+func (h *PriceHeap) Peek() (int, bool) {
+	if len(h.prices) == 0 {
+		return 0, false
+	}
+	return h.prices[0], true
+}
+
 // OrderBookSide represents one side of the order book (buy or sell)
 type OrderBookSide struct {
 	levels       map[int]*PriceLevel      // price -> PriceLevel
+	priceHeap    *PriceHeap               // Heap for O(log n) best price access
 	orderLookup  map[string]*list.Element // orderId -> list element for O(1) cancellation
 	orderToPrice map[string]int           // orderId -> price for lookup
 	isBuySide    bool                     // true for buy side, false for sell side
@@ -108,8 +147,11 @@ type OrderBookSide struct {
 
 // NewOrderBookSide creates a new order book side
 func NewOrderBookSide(isBuySide bool) *OrderBookSide {
+	h := &PriceHeap{prices: make([]int, 0), isBuySide: isBuySide}
+	heap.Init(h)
 	return &OrderBookSide{
 		levels:       make(map[int]*PriceLevel),
+		priceHeap:    h,
 		orderLookup:  make(map[string]*list.Element),
 		orderToPrice: make(map[string]int),
 		isBuySide:    isBuySide,
@@ -118,17 +160,18 @@ func NewOrderBookSide(isBuySide bool) *OrderBookSide {
 
 // AddOrder adds an order to the order book side
 func (obs *OrderBookSide) AddOrder(order *Order) {
-	price := order.limitPrice
+	price := order.LimitPrice
 
 	// Create price level if it doesn't exist
 	if _, exists := obs.levels[price]; !exists {
 		obs.levels[price] = NewPriceLevel(price)
+		heap.Push(obs.priceHeap, price)
 	}
 
 	// Add order to price level
 	element := obs.levels[price].AddOrder(order)
-	obs.orderLookup[order.orderId] = element
-	obs.orderToPrice[order.orderId] = price
+	obs.orderLookup[order.OrderId] = element
+	obs.orderToPrice[order.OrderId] = price
 }
 
 // RemoveOrder removes an order by ID
@@ -145,39 +188,32 @@ func (obs *OrderBookSide) RemoveOrder(orderId string) bool {
 	delete(obs.orderLookup, orderId)
 	delete(obs.orderToPrice, orderId)
 
-	// Remove empty price level
+	// Remove empty price level from map (lazy deletion in heap)
 	if level.IsEmpty() {
 		delete(obs.levels, price)
+		// Price remains in heap as stale entry - cleaned up lazily in GetBestPrice/PopBestPrice
 	}
 
 	return true
 }
 
+// cleanStaleHeapTop removes stale prices from heap top (prices with no level)
+func (obs *OrderBookSide) cleanStaleHeapTop() {
+	for obs.priceHeap.Len() > 0 {
+		topPrice, _ := obs.priceHeap.Peek()
+		if _, exists := obs.levels[topPrice]; exists {
+			break // Top price is valid
+		}
+		// Remove stale price
+		heap.Pop(obs.priceHeap)
+	}
+}
+
 // GetBestPrice returns the best price on this side (highest for buy, lowest for sell)
+// Uses lazy deletion to skip stale prices
 func (obs *OrderBookSide) GetBestPrice() (int, bool) {
-	if len(obs.levels) == 0 {
-		return 0, false
-	}
-
-	if obs.isBuySide {
-		// Buy side: return highest price
-		best := math.MinInt
-		for price := range obs.levels {
-			if price > best {
-				best = price
-			}
-		}
-		return best, true
-	}
-
-	// Sell side: return lowest price
-	best := math.MaxInt
-	for price := range obs.levels {
-		if price < best {
-			best = price
-		}
-	}
-	return best, true
+	obs.cleanStaleHeapTop()
+	return obs.priceHeap.Peek()
 }
 
 // GetBestLevel returns the price level at the best price
@@ -187,21 +223,6 @@ func (obs *OrderBookSide) GetBestLevel() *PriceLevel {
 		return nil
 	}
 	return obs.levels[price]
-}
-
-// GetSortedPrices returns all prices sorted (descending for buy, ascending for sell)
-func (obs *OrderBookSide) GetSortedPrices() []int {
-	prices := make([]int, 0, len(obs.levels))
-	for price := range obs.levels {
-		prices = append(prices, price)
-	}
-
-	if obs.isBuySide {
-		sort.Sort(sort.Reverse(sort.IntSlice(prices))) // Highest first
-	} else {
-		sort.Ints(prices) // Lowest first
-	}
-	return prices
 }
 
 // IsEmpty returns true if there are no orders on this side

@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	github.com/Marwan051/tradding_platform_game/proto/gen/go v0.0.0
+	github.com/google/uuid v1.6.0
 	google.golang.org/grpc v1.70.0
 )
 

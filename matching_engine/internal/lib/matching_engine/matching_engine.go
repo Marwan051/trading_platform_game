@@ -1,6 +1,7 @@
 package matchingengine
 
 import (
+	"errors"
 	"sync"
 	"time"
 )
@@ -29,72 +30,86 @@ func (me *MatchingEngine) getOrCreateOrderBook(stock string) *StockOrderBook {
 }
 
 // SubmitOrder submits an order and attempts to match it
-// Returns a slice of matched events and any remaining unmatched quantity
-func (me *MatchingEngine) SubmitOrder(order *Order) ([]MatchedEvent, int) {
-	orderBook := me.getOrCreateOrderBook(order.stock)
+// Returns a slice of matched events, any remaining unmatched quantity, and an error
+func (me *MatchingEngine) SubmitOrder(order *Order) ([]MatchedEvent, int, error) {
+	// Minimal defensive checks to prevent panics
+	if order == nil {
+		return nil, 0, errors.New("order cannot be nil")
+	}
+	if order.Stock == "" {
+		return nil, 0, errors.New("stock cannot be empty")
+	}
+	if order.OrderId == "" {
+		return nil, 0, errors.New("order ID cannot be empty")
+	}
+
+	orderBook := me.getOrCreateOrderBook(order.Stock)
 
 	// Lock only this stock's order book
 	orderBook.mu.Lock()
 	defer orderBook.mu.Unlock()
 
-	if order.orderSide == Buy {
-		return me.matchBuyOrder(orderBook, order)
+	if order.OrderSide == Buy {
+		matches, remaining := me.matchBuyOrder(orderBook, order)
+		return matches, remaining, nil
 	}
-	return me.matchSellOrder(orderBook, order)
+	matches, remaining := me.matchSellOrder(orderBook, order)
+	return matches, remaining, nil
 }
 
 // matchBuyOrder matches a buy order against the sell side
 func (me *MatchingEngine) matchBuyOrder(book *StockOrderBook, buyOrder *Order) ([]MatchedEvent, int) {
 	var matches []MatchedEvent
-	remainingQty := buyOrder.quantity
+	remainingQty := buyOrder.Quantity
 
-	// Get sorted sell prices (lowest first - best asks)
-	for _, askPrice := range book.sellSide.GetSortedPrices() {
+	// Iterate through best asks using heap - O(k log n) where k = matched levels
+	for remainingQty > 0 {
+		askPrice, ok := book.sellSide.GetBestPrice()
+		if !ok {
+			break // No more sell orders
+		}
+
 		// For limit orders, check if prices cross
-		if buyOrder.orderType == LimitOrder && askPrice > buyOrder.limitPrice {
-			break // No more matches possible - remaining sell prices are higher
+		if buyOrder.OrderType == LimitOrder && askPrice > buyOrder.LimitPrice {
+			break // No more matches possible - best ask is too high
 		}
 
 		level := book.sellSide.levels[askPrice]
-
+		now := time.Now()
 		// Match against orders at this price level (FIFO)
 		for !level.IsEmpty() && remainingQty > 0 {
 			sellOrder := level.Front()
 
 			// Calculate match quantity
-			matchQty := min(remainingQty, sellOrder.quantity)
+			matchQty := min(remainingQty, sellOrder.Quantity)
 
 			// Create match event (price is the resting order's price)
 			match := MatchedEvent{
-				buyerOrderId:       buyOrder.orderId,
-				sellerOrderId:      sellOrder.orderId,
-				pricePerStockCents: askPrice,
-				quantity:           matchQty,
-				timestamp:          time.Now(),
+				BuyerOrderId:       buyOrder.OrderId,
+				SellerOrderId:      sellOrder.OrderId,
+				PricePerStockCents: askPrice,
+				Quantity:           matchQty,
+				Timestamp:          now,
 			}
 			matches = append(matches, match)
 
 			// Update quantities
 			remainingQty -= matchQty
-			sellOrder.quantity -= matchQty
+			sellOrder.Quantity -= matchQty
 
 			// Remove fully filled sell order
-			if sellOrder.quantity == 0 {
-				book.sellSide.RemoveOrder(sellOrder.orderId)
+			if sellOrder.Quantity == 0 {
+				book.sellSide.RemoveOrder(sellOrder.OrderId)
 			} else {
 				// Update volume tracking
 				level.volume -= matchQty
 			}
 		}
-
-		if remainingQty == 0 {
-			break
-		}
 	}
 
 	// If there's remaining quantity for a limit order, add to book
-	if remainingQty > 0 && buyOrder.orderType == LimitOrder {
-		buyOrder.quantity = remainingQty
+	if remainingQty > 0 && buyOrder.OrderType == LimitOrder {
+		buyOrder.Quantity = remainingQty
 		book.buySide.AddOrder(buyOrder)
 	}
 
@@ -104,55 +119,56 @@ func (me *MatchingEngine) matchBuyOrder(book *StockOrderBook, buyOrder *Order) (
 // matchSellOrder matches a sell order against the buy side
 func (me *MatchingEngine) matchSellOrder(book *StockOrderBook, sellOrder *Order) ([]MatchedEvent, int) {
 	var matches []MatchedEvent
-	remainingQty := sellOrder.quantity
+	remainingQty := sellOrder.Quantity
 
-	// Get sorted buy prices (highest first - best bids)
-	for _, bidPrice := range book.buySide.GetSortedPrices() {
+	// Iterate through best bids using heap - O(k log n) where k = matched levels
+	for remainingQty > 0 {
+		bidPrice, ok := book.buySide.GetBestPrice()
+		if !ok {
+			break // No more buy orders
+		}
+
 		// For limit orders, check if prices cross
-		if sellOrder.orderType == LimitOrder && bidPrice < sellOrder.limitPrice {
-			break // No more matches possible - remaining buy prices are lower
+		if sellOrder.OrderType == LimitOrder && bidPrice < sellOrder.LimitPrice {
+			break // No more matches possible - best bid is too low
 		}
 
 		level := book.buySide.levels[bidPrice]
-
+		now := time.Now()
 		// Match against orders at this price level (FIFO)
 		for !level.IsEmpty() && remainingQty > 0 {
 			buyOrder := level.Front()
 
 			// Calculate match quantity
-			matchQty := min(remainingQty, buyOrder.quantity)
+			matchQty := min(remainingQty, buyOrder.Quantity)
 
 			// Create match event (price is the resting order's price)
 			match := MatchedEvent{
-				buyerOrderId:       buyOrder.orderId,
-				sellerOrderId:      sellOrder.orderId,
-				pricePerStockCents: bidPrice,
-				quantity:           matchQty,
-				timestamp:          time.Now(),
+				BuyerOrderId:       buyOrder.OrderId,
+				SellerOrderId:      sellOrder.OrderId,
+				PricePerStockCents: bidPrice,
+				Quantity:           matchQty,
+				Timestamp:          now,
 			}
 			matches = append(matches, match)
 
 			// Update quantities
 			remainingQty -= matchQty
-			buyOrder.quantity -= matchQty
+			buyOrder.Quantity -= matchQty
 
 			// Remove fully filled buy order
-			if buyOrder.quantity == 0 {
-				book.buySide.RemoveOrder(buyOrder.orderId)
+			if buyOrder.Quantity == 0 {
+				book.buySide.RemoveOrder(buyOrder.OrderId)
 			} else {
 				// Update volume tracking
 				level.volume -= matchQty
 			}
 		}
-
-		if remainingQty == 0 {
-			break
-		}
 	}
 
 	// If there's remaining quantity for a limit order, add to book
-	if remainingQty > 0 && sellOrder.orderType == LimitOrder {
-		sellOrder.quantity = remainingQty
+	if remainingQty > 0 && sellOrder.OrderType == LimitOrder {
+		sellOrder.Quantity = remainingQty
 		book.sellSide.AddOrder(sellOrder)
 	}
 
@@ -174,51 +190,4 @@ func (me *MatchingEngine) CancelOrder(stock, orderId string, side OrderSide) boo
 		return book.buySide.RemoveOrder(orderId)
 	}
 	return book.sellSide.RemoveOrder(orderId)
-}
-
-// GetBestBid returns the best bid price for a stock
-func (me *MatchingEngine) GetBestBid(stock string) (int, bool) {
-	value, exists := me.orderBooks.Load(stock)
-	if !exists {
-		return 0, false
-	}
-
-	book := value.(*StockOrderBook)
-	book.mu.RLock()
-	defer book.mu.RUnlock()
-	return book.buySide.GetBestPrice()
-}
-
-// GetBestAsk returns the best ask price for a stock
-func (me *MatchingEngine) GetBestAsk(stock string) (int, bool) {
-	value, exists := me.orderBooks.Load(stock)
-	if !exists {
-		return 0, false
-	}
-
-	book := value.(*StockOrderBook)
-	book.mu.RLock()
-	defer book.mu.RUnlock()
-	return book.sellSide.GetBestPrice()
-}
-
-// GetSpread returns the bid-ask spread for a stock
-func (me *MatchingEngine) GetSpread(stock string) (int, bool) {
-	value, exists := me.orderBooks.Load(stock)
-	if !exists {
-		return 0, false
-	}
-
-	book := value.(*StockOrderBook)
-	book.mu.RLock()
-	defer book.mu.RUnlock()
-
-	bid, hasBid := book.buySide.GetBestPrice()
-	ask, hasAsk := book.sellSide.GetBestPrice()
-
-	if !hasBid || !hasAsk {
-		return 0, false
-	}
-
-	return ask - bid, true
 }
