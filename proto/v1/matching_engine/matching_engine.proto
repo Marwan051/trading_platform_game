@@ -1,7 +1,3 @@
-// ============================================================================
-// FILE: protos/matching_engine/matching_engine.proto
-// Matching Engine Service - Core trading operations only
-// ============================================================================
 syntax = "proto3";
 
 package trading.matching_engine;
@@ -21,9 +17,6 @@ service MatchingEngine {
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
 }
 
-// ============================================================================
-// MESSAGES
-// ============================================================================
 
 // PlaceOrderRequest contains the parameters to place a new order.
 message PlaceOrderRequest {
