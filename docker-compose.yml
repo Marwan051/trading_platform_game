@@ -1,0 +1,50 @@
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: trading_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-trading}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trading_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-trading_game}
+    ports:
+      - "5432:5432"
+    volumes:
+      - trading_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-trading} -d ${POSTGRES_DB:-trading_game}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrator:
+    build:
+      context: ./backend/database
+      dockerfile: Dockerfile.migrator
+    container_name: trading_migrator
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: "postgres://${POSTGRES_USER:-trading}:${POSTGRES_PASSWORD:-trading_secret}@db:5432/${POSTGRES_DB:-trading_game}?sslmode=disable"
+    command: ["up"]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trading_backend
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER:-trading}:${POSTGRES_PASSWORD:-trading_secret}@db:5432/${POSTGRES_DB:-trading_game}?sslmode=disable"
+    ports:
+      - "8080:8080"
+
+volumes:
+  trading_db_data:
