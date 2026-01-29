@@ -200,13 +200,19 @@ func TestMatchingEngine(t *testing.T) {
 		engine.SubmitOrder(buyOrder)
 
 		// Cancel it
-		cancelled := engine.CancelOrder("AAPL", "buy1", Buy)
+		cancelled, err := engine.CancelOrder("AAPL", "buy1", Buy)
+		if err != nil {
+			t.Errorf("unexpected error : %s", err.Error())
+		}
 		if !cancelled {
 			t.Error("expected order to be cancelled")
 		}
 
 		// Try to cancel again - should return false
-		cancelledAgain := engine.CancelOrder("AAPL", "buy1", Buy)
+		cancelledAgain, err := engine.CancelOrder("AAPL", "buy1", Buy)
+		if err != nil {
+			t.Errorf("unexpected error : %s", err.Error())
+		}
 		if cancelledAgain {
 			t.Error("expected cancel to return false for already cancelled order")
 		}

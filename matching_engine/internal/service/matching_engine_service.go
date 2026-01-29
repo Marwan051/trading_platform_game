@@ -8,6 +8,8 @@ import (
 	matchingengine "github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/matching_engine"
 	pb "github.com/Marwan051/tradding_platform_game/proto/gen/go/v1/matching_engine"
 	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type MatchingEngineService struct {
@@ -36,7 +38,7 @@ func (s *MatchingEngineService) PlaceOrder(ctx context.Context, req *pb.PlaceOrd
 
 	order := &matchingengine.Order{
 		OrderId:    orderID,
-		Stock:      req.StockId,
+		Stock:      req.StockTicker,
 		OrderType:  matchingengine.OrderType(req.OrderType),
 		OrderSide:  matchingengine.OrderSide(req.Side),
 		Quantity:   int(req.Quantity),
@@ -46,12 +48,7 @@ func (s *MatchingEngineService) PlaceOrder(ctx context.Context, req *pb.PlaceOrd
 	matches, remainingQty, err := s.engine.SubmitOrder(order)
 	if err != nil {
 		s.logger.Error("Failed to submit order", "error", err, "order_id", orderID)
-		return &pb.PlaceOrderResponse{
-			Success:      false,
-			OrderId:      orderID,
-			ErrorMessage: err.Error(),
-			ErrorCode:    1, // TODO: Map to proper error codes
-		}, nil
+		return nil, status.Errorf(codes.InvalidArgument, "failed to place order: %v", err)
 	}
 
 	return &pb.PlaceOrderResponse{
@@ -60,5 +57,23 @@ func (s *MatchingEngineService) PlaceOrder(ctx context.Context, req *pb.PlaceOrd
 		WasFilledImmediately:  len(matches) > 0,
 		FilledQuantity:        int64(req.Quantity) - int64(remainingQty),
 		AverageFillPriceCents: 0, // TODO: Calculate average fill price from matches
+	}, nil
+}
+
+func (s *MatchingEngineService) CancelOrder(ctx context.Context, req *pb.CancelOrderRequest) (*pb.CancelOrderResponse, error) {
+	found, err := s.engine.CancelOrder(req.StockTicker, req.OrderId, matchingengine.OrderSide(req.Side))
+	if err != nil {
+		s.logger.Error("Failed to cancel order", "error", err, "order_id", req.OrderId)
+		return nil, status.Errorf(codes.InvalidArgument, "failed to cancel order: %v", err)
+	}
+
+	if !found {
+		s.logger.Warn("Order not found for cancellation", "order_id", req.OrderId, "stock", req.StockTicker)
+		return nil, status.Errorf(codes.NotFound, "order not found: %s", req.OrderId)
+	}
+
+	return &pb.CancelOrderResponse{
+		Success: true,
+		OrderId: req.OrderId,
 	}, nil
 }
