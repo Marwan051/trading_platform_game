@@ -22,7 +22,7 @@ service MatchingEngine {
 message PlaceOrderRequest {
   string user_id = 1;
   string bot_id = 2;
-  string stock_id = 3;
+  string stock_ticker = 3;
   common.types.OrderType order_type = 4;
   common.types.OrderSide side = 5;
   int64 quantity = 6;
@@ -44,8 +44,9 @@ message PlaceOrderResponse {
 // CancelOrderRequest contains the parameters to cancel an order.
 message CancelOrderRequest {
   string order_id = 1;
-  string user_id = 2;
-  string bot_id = 3;
+  string stock_ticker=2;
+  string user_id = 3;
+  string bot_id = 4;
 }
 
 // CancelOrderResponse returns the result of cancelling an order.
