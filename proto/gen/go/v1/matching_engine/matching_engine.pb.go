@@ -221,8 +221,9 @@ type CancelOrderRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OrderId       string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	StockTicker   string                 `protobuf:"bytes,2,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
-	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId         string                 `protobuf:"bytes,4,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	Side          common.OrderSide       `protobuf:"varint,3,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
+	UserId        string                 `protobuf:"bytes,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	BotId         string                 `protobuf:"bytes,5,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -269,6 +270,13 @@ func (x *CancelOrderRequest) GetStockTicker() string {
 		return x.StockTicker
 	}
 	return ""
+}
+
+func (x *CancelOrderRequest) GetSide() common.OrderSide {
+	if x != nil {
+		return x.Side
+	}
+	return common.OrderSide(0)
 }
 
 func (x *CancelOrderRequest) GetUserId() string {
@@ -467,12 +475,13 @@ const file_proto_v1_matching_engine_matching_engine_proto_rawDesc = "" +
 	"\x18average_fill_price_cents\x18\x05 \x01(\x03R\x15averageFillPriceCents\x12#\n" +
 	"\rerror_message\x18\x06 \x01(\tR\ferrorMessage\x126\n" +
 	"\n" +
-	"error_code\x18\a \x01(\x0e2\x17.common.types.ErrorCodeR\terrorCode\"\x82\x01\n" +
+	"error_code\x18\a \x01(\x0e2\x17.common.types.ErrorCodeR\terrorCode\"\xaf\x01\n" +
 	"\x12CancelOrderRequest\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12!\n" +
-	"\fstock_ticker\x18\x02 \x01(\tR\vstockTicker\x12\x17\n" +
-	"\auser_id\x18\x03 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x04 \x01(\tR\x05botId\"o\n" +
+	"\fstock_ticker\x18\x02 \x01(\tR\vstockTicker\x12+\n" +
+	"\x04side\x18\x03 \x01(\x0e2\x17.common.types.OrderSideR\x04side\x12\x17\n" +
+	"\auser_id\x18\x04 \x01(\tR\x06userId\x12\x15\n" +
+	"\x06bot_id\x18\x05 \x01(\tR\x05botId\"o\n" +
 	"\x13CancelOrderResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x19\n" +
 	"\border_id\x18\x02 \x01(\tR\aorderId\x12#\n" +
@@ -517,17 +526,18 @@ var file_proto_v1_matching_engine_matching_engine_proto_depIdxs = []int32{
 	6, // 0: trading.matching_engine.PlaceOrderRequest.order_type:type_name -> common.types.OrderType
 	7, // 1: trading.matching_engine.PlaceOrderRequest.side:type_name -> common.types.OrderSide
 	8, // 2: trading.matching_engine.PlaceOrderResponse.error_code:type_name -> common.types.ErrorCode
-	0, // 3: trading.matching_engine.MatchingEngine.PlaceOrder:input_type -> trading.matching_engine.PlaceOrderRequest
-	2, // 4: trading.matching_engine.MatchingEngine.CancelOrder:input_type -> trading.matching_engine.CancelOrderRequest
-	4, // 5: trading.matching_engine.MatchingEngine.HealthCheck:input_type -> trading.matching_engine.HealthCheckRequest
-	1, // 6: trading.matching_engine.MatchingEngine.PlaceOrder:output_type -> trading.matching_engine.PlaceOrderResponse
-	3, // 7: trading.matching_engine.MatchingEngine.CancelOrder:output_type -> trading.matching_engine.CancelOrderResponse
-	5, // 8: trading.matching_engine.MatchingEngine.HealthCheck:output_type -> trading.matching_engine.HealthCheckResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	7, // 3: trading.matching_engine.CancelOrderRequest.side:type_name -> common.types.OrderSide
+	0, // 4: trading.matching_engine.MatchingEngine.PlaceOrder:input_type -> trading.matching_engine.PlaceOrderRequest
+	2, // 5: trading.matching_engine.MatchingEngine.CancelOrder:input_type -> trading.matching_engine.CancelOrderRequest
+	4, // 6: trading.matching_engine.MatchingEngine.HealthCheck:input_type -> trading.matching_engine.HealthCheckRequest
+	1, // 7: trading.matching_engine.MatchingEngine.PlaceOrder:output_type -> trading.matching_engine.PlaceOrderResponse
+	3, // 8: trading.matching_engine.MatchingEngine.CancelOrder:output_type -> trading.matching_engine.CancelOrderResponse
+	5, // 9: trading.matching_engine.MatchingEngine.HealthCheck:output_type -> trading.matching_engine.HealthCheckResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_proto_v1_matching_engine_matching_engine_proto_init() }

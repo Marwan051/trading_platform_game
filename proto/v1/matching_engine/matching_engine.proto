@@ -45,8 +45,9 @@ message PlaceOrderResponse {
 message CancelOrderRequest {
   string order_id = 1;
   string stock_ticker=2;
-  string user_id = 3;
-  string bot_id = 4;
+  common.types.OrderSide side =  3;
+  string user_id = 4;
+  string bot_id = 5;
 }
 
 // CancelOrderResponse returns the result of cancelling an order.
