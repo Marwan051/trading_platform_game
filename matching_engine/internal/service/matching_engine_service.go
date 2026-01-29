@@ -36,11 +36,26 @@ func (s *MatchingEngineService) HealthCheck(ctx context.Context, req *pb.HealthC
 func (s *MatchingEngineService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
 	orderID := uuid.New().String()
 
+	// Convert protobuf enums (1-indexed) to Go enums (0-indexed)
+	var orderSide matchingengine.OrderSide
+	if req.Side == 1 {
+		orderSide = matchingengine.Buy
+	} else {
+		orderSide = matchingengine.Sell
+	}
+
+	var orderType matchingengine.OrderType
+	if req.OrderType == 1 {
+		orderType = matchingengine.MarketOrder
+	} else {
+		orderType = matchingengine.LimitOrder
+	}
+
 	order := &matchingengine.Order{
 		OrderId:    orderID,
 		Stock:      req.StockTicker,
-		OrderType:  matchingengine.OrderType(req.OrderType),
-		OrderSide:  matchingengine.OrderSide(req.Side),
+		OrderType:  orderType,
+		OrderSide:  orderSide,
 		Quantity:   int(req.Quantity),
 		LimitPrice: int(req.LimitPriceCents),
 		Timestamp:  time.Now(),
