@@ -6,6 +6,7 @@ import (
 	"time"
 
 	matchingengine "github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/matching_engine"
+	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/types"
 	pb "github.com/Marwan051/tradding_platform_game/proto/gen/go/v1/matching_engine"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -37,21 +38,21 @@ func (s *MatchingEngineService) PlaceOrder(ctx context.Context, req *pb.PlaceOrd
 	orderID := uuid.New().String()
 
 	// Convert protobuf enums (1-indexed) to Go enums (0-indexed)
-	var orderSide matchingengine.OrderSide
+	var orderSide types.OrderSide
 	if req.Side == 1 {
-		orderSide = matchingengine.Buy
+		orderSide = types.Buy
 	} else {
-		orderSide = matchingengine.Sell
+		orderSide = types.Sell
 	}
 
-	var orderType matchingengine.OrderType
+	var orderType types.OrderType
 	if req.OrderType == 1 {
-		orderType = matchingengine.MarketOrder
+		orderType = types.MarketOrder
 	} else {
-		orderType = matchingengine.LimitOrder
+		orderType = types.LimitOrder
 	}
 
-	order := &matchingengine.Order{
+	order := &types.Order{
 		OrderId:    orderID,
 		Stock:      req.StockTicker,
 		OrderType:  orderType,
@@ -76,7 +77,7 @@ func (s *MatchingEngineService) PlaceOrder(ctx context.Context, req *pb.PlaceOrd
 }
 
 func (s *MatchingEngineService) CancelOrder(ctx context.Context, req *pb.CancelOrderRequest) (*pb.CancelOrderResponse, error) {
-	found, err := s.engine.CancelOrder(req.StockTicker, req.OrderId, matchingengine.OrderSide(req.Side))
+	found, err := s.engine.CancelOrder(req.StockTicker, req.OrderId, types.OrderSide(req.Side))
 	if err != nil {
 		s.logger.Error("Failed to cancel order", "error", err, "order_id", req.OrderId)
 		return nil, status.Errorf(codes.InvalidArgument, "failed to cancel order: %v", err)

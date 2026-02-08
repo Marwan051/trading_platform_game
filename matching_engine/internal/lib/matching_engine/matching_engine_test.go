@@ -3,11 +3,13 @@ package matchingengine
 import (
 	"testing"
 	"time"
+
+	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/types"
 )
 
 // Helper to create an order
-func newOrder(id, stock string, side OrderSide, orderType OrderType, qty, price int) *Order {
-	return &Order{
+func newOrder(id, stock string, side types.OrderSide, orderType types.OrderType, qty, price int) *types.Order {
+	return &types.Order{
 		OrderId:    id,
 		Stock:      stock,
 		OrderSide:  side,
@@ -30,7 +32,7 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Submit a buy order with no matching sell orders
-		buyOrder := newOrder("buy1", "AAPL", Buy, LimitOrder, 100, 15000) // $150.00
+		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 100, 15000) // $150.00
 		matches, remaining, _ := engine.SubmitOrder(buyOrder)
 
 		if len(matches) != 0 {
@@ -45,11 +47,11 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Add a sell order at $150
-		sellOrder := newOrder("sell1", "AAPL", Sell, LimitOrder, 100, 15000)
+		sellOrder := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 100, 15000)
 		engine.SubmitOrder(sellOrder)
 
-		// Add a buy order at $150 - should match
-		buyOrder := newOrder("buy1", "AAPL", Buy, LimitOrder, 100, 15000)
+		// Add a buy order at $150 that should match
+		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 100, 15000)
 		matches, remaining, _ := engine.SubmitOrder(buyOrder)
 
 		if len(matches) != 1 {
@@ -78,11 +80,11 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Sell order resting at $145
-		sellOrder := newOrder("sell1", "AAPL", Sell, LimitOrder, 50, 14500)
+		sellOrder := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 50, 14500)
 		engine.SubmitOrder(sellOrder)
 
 		// Buy order comes in at $150 - should match at $145 (resting price)
-		buyOrder := newOrder("buy1", "AAPL", Buy, LimitOrder, 50, 15000)
+		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 50, 15000)
 		matches, _, _ := engine.SubmitOrder(buyOrder)
 
 		if len(matches) != 1 {
@@ -97,11 +99,11 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Sell 50 shares at $150
-		sellOrder := newOrder("sell1", "AAPL", Sell, LimitOrder, 50, 15000)
+		sellOrder := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 50, 15000)
 		engine.SubmitOrder(sellOrder)
 
 		// Buy 100 shares at $150 - should partially fill
-		buyOrder := newOrder("buy1", "AAPL", Buy, LimitOrder, 100, 15000)
+		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 100, 15000)
 		matches, remaining, _ := engine.SubmitOrder(buyOrder)
 
 		if len(matches) != 1 {
@@ -119,14 +121,14 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Add two sell orders at same price
-		sell1 := newOrder("sell1", "AAPL", Sell, LimitOrder, 30, 15000)
-		sell2 := newOrder("sell2", "AAPL", Sell, LimitOrder, 30, 15000)
+		sell1 := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 30, 15000)
+		sell2 := newOrder("sell2", "AAPL", types.Sell, types.LimitOrder, 30, 15000)
 		engine.SubmitOrder(sell1)
 		time.Sleep(time.Millisecond) // Ensure different timestamps
 		engine.SubmitOrder(sell2)
 
 		// Buy order should match FIFO (sell1 first)
-		buyOrder := newOrder("buy1", "AAPL", Buy, LimitOrder, 50, 15000)
+		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 50, 15000)
 		matches, remaining, _ := engine.SubmitOrder(buyOrder)
 
 		if len(matches) != 2 {
@@ -153,13 +155,13 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Add sell orders at different prices
-		sell1 := newOrder("sell1", "AAPL", Sell, LimitOrder, 50, 15100) // $151.00
-		sell2 := newOrder("sell2", "AAPL", Sell, LimitOrder, 50, 15000) // $150.00 - best ask
+		sell1 := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 50, 15100) // $151.00
+		sell2 := newOrder("sell2", "AAPL", types.Sell, types.LimitOrder, 50, 15000) // $150.00 - best ask
 		engine.SubmitOrder(sell1)
 		engine.SubmitOrder(sell2)
 
 		// Buy should match cheapest first
-		buyOrder := newOrder("buy1", "AAPL", Buy, LimitOrder, 50, 15100)
+		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 50, 15100)
 		matches, _, _ := engine.SubmitOrder(buyOrder)
 
 		if len(matches) != 1 {
@@ -177,11 +179,11 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Sell at $155
-		sellOrder := newOrder("sell1", "AAPL", Sell, LimitOrder, 100, 15500)
+		sellOrder := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 100, 15500)
 		engine.SubmitOrder(sellOrder)
 
 		// Buy at $150 - no match
-		buyOrder := newOrder("buy1", "AAPL", Buy, LimitOrder, 100, 15000)
+		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 100, 15000)
 		matches, remaining, _ := engine.SubmitOrder(buyOrder)
 
 		if len(matches) != 0 {
@@ -196,11 +198,11 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Add a buy order
-		buyOrder := newOrder("buy1", "AAPL", Buy, LimitOrder, 100, 15000)
+		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 100, 15000)
 		engine.SubmitOrder(buyOrder)
 
 		// Cancel it
-		cancelled, err := engine.CancelOrder("AAPL", "buy1", Buy)
+		cancelled, err := engine.CancelOrder("AAPL", "buy1", types.Buy)
 		if err != nil {
 			t.Errorf("unexpected error : %s", err.Error())
 		}
@@ -209,7 +211,7 @@ func TestMatchingEngine(t *testing.T) {
 		}
 
 		// Try to cancel again - should return false
-		cancelledAgain, err := engine.CancelOrder("AAPL", "buy1", Buy)
+		cancelledAgain, err := engine.CancelOrder("AAPL", "buy1", types.Buy)
 		if err != nil {
 			t.Errorf("unexpected error : %s", err.Error())
 		}
@@ -222,13 +224,13 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Add sell orders at different prices
-		sell1 := newOrder("sell1", "AAPL", Sell, LimitOrder, 50, 15000)
-		sell2 := newOrder("sell2", "AAPL", Sell, LimitOrder, 50, 15100)
+		sell1 := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 50, 15000)
+		sell2 := newOrder("sell2", "AAPL", types.Sell, types.LimitOrder, 50, 15100)
 		engine.SubmitOrder(sell1)
 		engine.SubmitOrder(sell2)
 
 		// Market buy should match all available
-		buyOrder := newOrder("buy1", "AAPL", Buy, MarketOrder, 100, 0)
+		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.MarketOrder, 100, 0)
 		matches, remaining, _ := engine.SubmitOrder(buyOrder)
 
 		if len(matches) != 2 {
@@ -243,13 +245,13 @@ func TestMatchingEngine(t *testing.T) {
 		engine := NewMatchingEngine()
 
 		// Add orders for different stocks
-		aaplSell := newOrder("aapl-sell", "AAPL", Sell, LimitOrder, 100, 15000)
-		googlSell := newOrder("googl-sell", "GOOGL", Sell, LimitOrder, 50, 140000)
+		aaplSell := newOrder("aapl-sell", "AAPL", types.Sell, types.LimitOrder, 100, 15000)
+		googlSell := newOrder("googl-sell", "GOOGL", types.Sell, types.LimitOrder, 50, 140000)
 		engine.SubmitOrder(aaplSell)
 		engine.SubmitOrder(googlSell)
 
 		// Buy AAPL only
-		aaplBuy := newOrder("aapl-buy", "AAPL", Buy, LimitOrder, 100, 15000)
+		aaplBuy := newOrder("aapl-buy", "AAPL", types.Buy, types.LimitOrder, 100, 15000)
 		matches, _, _ := engine.SubmitOrder(aaplBuy)
 
 		if len(matches) != 1 {
@@ -273,8 +275,8 @@ func TestMatchingEngineConcurrency(t *testing.T) {
 				order := newOrder(
 					"order-"+string(rune('A'+id%26))+string(rune('0'+id%10)),
 					"AAPL",
-					OrderSide(id%2),
-					LimitOrder,
+					types.OrderSide(id%2),
+					types.LimitOrder,
 					10,
 					15000+id,
 				)
@@ -303,8 +305,8 @@ func TestMatchingEngineConcurrency(t *testing.T) {
 				order := newOrder(
 					"order-"+string(rune('A'+id)),
 					stocks[id%len(stocks)],
-					OrderSide(id%2),
-					LimitOrder,
+					types.OrderSide(id%2),
+					types.LimitOrder,
 					10,
 					15000,
 				)
