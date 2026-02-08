@@ -1,4 +1,4 @@
-package matchingengine
+package types
 
 import (
 	"container/heap"
@@ -233,16 +233,16 @@ func (obs *OrderBookSide) IsEmpty() bool {
 // StockOrderBook represents the order book for a single stock
 type StockOrderBook struct {
 	stock    string
-	buySide  *OrderBookSide // Bid side: buyers
-	sellSide *OrderBookSide // Ask side: sellers
-	mu       sync.RWMutex   // Per-stock lock for concurrent access
+	BuySide  *OrderBookSide // Bid side: buyers
+	SellSide *OrderBookSide // Ask side: sellers
+	Mu       sync.RWMutex   // Per-stock lock for concurrent access
 }
 
 // NewStockOrderBook creates a new order book for a stock
 func NewStockOrderBook(stock string) *StockOrderBook {
 	return &StockOrderBook{
 		stock:    stock,
-		buySide:  NewOrderBookSide(true),
-		sellSide: NewOrderBookSide(false),
+		BuySide:  NewOrderBookSide(true),
+		SellSide: NewOrderBookSide(false),
 	}
 }

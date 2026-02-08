@@ -1,10 +1,8 @@
-package events
+package types
 
 import (
 	"encoding/json"
 	"time"
-
-	matchingengine "github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/matching_engine"
 )
 
 type EventType int64
@@ -27,14 +25,14 @@ type Event struct {
 }
 
 type OrderPlacedEvent struct {
-	OrderID         string                   `json:"order_id"`
-	UserID          string                   `json:"user_id"`
-	BotID           string                   `json:"bot_id"`
-	StockTicker     string                   `json:"stock_ticker"`
-	OrderType       matchingengine.OrderType `json:"order_type"`
-	OrderSide       matchingengine.OrderSide `json:"order_side"`
-	Quantity        int64                    `json:"quantity"`
-	LimitPriceCents int64                    `json:"limit_price_cents"`
+	OrderID         string    `json:"order_id"`
+	UserID          string    `json:"user_id"`
+	BotID           string    `json:"bot_id"`
+	StockTicker     string    `json:"stock_ticker"`
+	OrderType       OrderType `json:"order_type"`
+	OrderSide       OrderSide `json:"order_side"`
+	Quantity        int64     `json:"quantity"`
+	LimitPriceCents int64     `json:"limit_price_cents"`
 }
 
 type OrderCancelledEvent struct {
