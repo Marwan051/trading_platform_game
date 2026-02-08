@@ -5,17 +5,19 @@ import (
 	"sync"
 	"time"
 
+	streamingclient "github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/events/streaming_client"
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/types"
 )
 
 // MatchingEngine handles order matching for all stocks
 type MatchingEngine struct {
-	orderBooks sync.Map // stock symbol -> *types.StockOrderBook
+	orderBooks    sync.Map // stock symbol -> *types.StockOrderBook
+	eventStreamer streamingclient.StreamingClient
 }
 
 // NewMatchingEngine creates a new matching engine
-func NewMatchingEngine() *MatchingEngine {
-	return &MatchingEngine{}
+func NewMatchingEngine(streamer streamingclient.StreamingClient) *MatchingEngine {
+	return &MatchingEngine{eventStreamer: streamer}
 }
 
 // getOrCreateOrderBook gets or creates an order book for a stock

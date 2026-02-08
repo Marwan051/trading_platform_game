@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/events/streaming_client/clients"
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/types"
 )
 
@@ -22,14 +23,16 @@ func newOrder(id, stock string, side types.OrderSide, orderType types.OrderType,
 
 func TestMatchingEngine(t *testing.T) {
 	t.Run("should initialize correctly", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 		if engine == nil {
 			t.Fatal("expected engine to be initialized")
 		}
 	})
 
 	t.Run("should add unmatched limit order to book", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Submit a buy order with no matching sell orders
 		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 100, 15000) // $150.00
@@ -44,7 +47,8 @@ func TestMatchingEngine(t *testing.T) {
 	})
 
 	t.Run("should match crossing orders exactly", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Add a sell order at $150
 		sellOrder := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 100, 15000)
@@ -77,7 +81,8 @@ func TestMatchingEngine(t *testing.T) {
 	})
 
 	t.Run("should match at resting order price", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Sell order resting at $145
 		sellOrder := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 50, 14500)
@@ -96,7 +101,8 @@ func TestMatchingEngine(t *testing.T) {
 	})
 
 	t.Run("should handle partial fills", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Sell 50 shares at $150
 		sellOrder := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 50, 15000)
@@ -118,7 +124,8 @@ func TestMatchingEngine(t *testing.T) {
 	})
 
 	t.Run("should match multiple orders at same price (FIFO)", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Add two sell orders at same price
 		sell1 := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 30, 15000)
@@ -152,7 +159,8 @@ func TestMatchingEngine(t *testing.T) {
 	})
 
 	t.Run("should match best price first (price priority)", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Add sell orders at different prices
 		sell1 := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 50, 15100) // $151.00
@@ -176,7 +184,8 @@ func TestMatchingEngine(t *testing.T) {
 	})
 
 	t.Run("should not match if prices don't cross", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Sell at $155
 		sellOrder := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 100, 15500)
@@ -195,7 +204,8 @@ func TestMatchingEngine(t *testing.T) {
 	})
 
 	t.Run("should cancel orders", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Add a buy order
 		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.LimitOrder, 100, 15000)
@@ -221,7 +231,8 @@ func TestMatchingEngine(t *testing.T) {
 	})
 
 	t.Run("should handle market orders", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Add sell orders at different prices
 		sell1 := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 50, 15000)
@@ -242,7 +253,8 @@ func TestMatchingEngine(t *testing.T) {
 	})
 
 	t.Run("should handle multiple stocks independently", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		// Add orders for different stocks
 		aaplSell := newOrder("aapl-sell", "AAPL", types.Sell, types.LimitOrder, 100, 15000)
@@ -265,7 +277,8 @@ func TestMatchingEngine(t *testing.T) {
 
 func TestMatchingEngineConcurrency(t *testing.T) {
 	t.Run("should handle concurrent orders for same stock", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 
 		done := make(chan bool)
 
@@ -294,7 +307,8 @@ func TestMatchingEngineConcurrency(t *testing.T) {
 	})
 
 	t.Run("should handle concurrent orders for different stocks", func(t *testing.T) {
-		engine := NewMatchingEngine()
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
 		stocks := []string{"AAPL", "GOOGL", "MSFT", "AMZN", "META"}
 
 		done := make(chan bool)
