@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"time"
 
+	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/events/streaming_client/clients"
 	matchingengine "github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/matching_engine"
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/types"
 	pb "github.com/Marwan051/tradding_platform_game/proto/gen/go/v1/matching_engine"
@@ -20,9 +22,15 @@ type MatchingEngineService struct {
 }
 
 func NewMatchingEngineService(logger *slog.Logger) *MatchingEngineService {
+	valkeyStreamingClient, err := clients.NewValkeyClient(
+		"localhost", 6379, "matching_engine_stream", 10000,
+	)
+	if err != nil {
+		log.Fatalf("Could not connect to event streaming client with error: %s", err)
+	}
 	return &MatchingEngineService{
 		logger: logger,
-		engine: *matchingengine.NewMatchingEngine(),
+		engine: *matchingengine.NewMatchingEngine(valkeyStreamingClient),
 	}
 }
 
