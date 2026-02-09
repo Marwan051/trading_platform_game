@@ -1,0 +1,69 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Documentation
+*.md
+README
+LICENSE
+docs/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Go
+vendor/
+*.test
+*.out
+*.prof
+*.log
+coverage.txt
+coverage.html
+
+# Build artifacts
+tmp/
+bin/
+build/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Air live reload
+.air.toml
+tmp/
+
+# Environment and config
+.env
+.env.*
+!.env.example
+config.local.*
+secrets/
+
+# Docker
+Dockerfile.dev
+docker-compose*.yml
+!docker-compose.yml
+.dockerignore
+
+# Testing
+*_test.go
+testdata/
+
+# Misc
+node_modules/
+npm-debug.log
+yarn-error.log
