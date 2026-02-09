@@ -75,7 +75,7 @@ func (DeltaType) EnumDescriptor() ([]byte, []int) {
 // GetOrderBookRequest request for fetching snapshot of order book.
 type GetOrderBookRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StockId       string                 `protobuf:"bytes,1,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker   string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Depth         int32                  `protobuf:"varint,2,opt,name=depth,proto3" json:"depth,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -111,9 +111,9 @@ func (*GetOrderBookRequest) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *GetOrderBookRequest) GetStockId() string {
+func (x *GetOrderBookRequest) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -128,7 +128,7 @@ func (x *GetOrderBookRequest) GetDepth() int32 {
 // OrderBook represents a snapshot of the current state of the order book for a given stock.
 type OrderBook struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	StockId             string                 `protobuf:"bytes,1,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker         string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Bids                []*PriceLevel          `protobuf:"bytes,2,rep,name=bids,proto3" json:"bids,omitempty"`
 	Asks                []*PriceLevel          `protobuf:"bytes,3,rep,name=asks,proto3" json:"asks,omitempty"`
 	TimestampMs         int64                  `protobuf:"varint,4,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
@@ -168,9 +168,9 @@ func (*OrderBook) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *OrderBook) GetStockId() string {
+func (x *OrderBook) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -274,7 +274,7 @@ func (x *PriceLevel) GetOrderCount() int32 {
 // StreamOrderBookRequest request to subscribe to real-time updates for an order book.
 type StreamOrderBookRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StockId       string                 `protobuf:"bytes,1,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker   string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Depth         int32                  `protobuf:"varint,2,opt,name=depth,proto3" json:"depth,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -310,9 +310,9 @@ func (*StreamOrderBookRequest) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *StreamOrderBookRequest) GetStockId() string {
+func (x *StreamOrderBookRequest) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -327,7 +327,7 @@ func (x *StreamOrderBookRequest) GetDepth() int32 {
 // OrderBookUpdate represents an incremental update to the order book state.
 type OrderBookUpdate struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	StockId             string                 `protobuf:"bytes,1,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker         string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	TimestampMs         int64                  `protobuf:"varint,2,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
 	BidDeltas           []*PriceLevelDelta     `protobuf:"bytes,3,rep,name=bid_deltas,json=bidDeltas,proto3" json:"bid_deltas,omitempty"`
 	AskDeltas           []*PriceLevelDelta     `protobuf:"bytes,4,rep,name=ask_deltas,json=askDeltas,proto3" json:"ask_deltas,omitempty"`
@@ -367,9 +367,9 @@ func (*OrderBookUpdate) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *OrderBookUpdate) GetStockId() string {
+func (x *OrderBookUpdate) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -473,7 +473,7 @@ func (x *PriceLevelDelta) GetDeltaType() DeltaType {
 // GetRecentTradesRequest request to fetch historical trades for a stock.
 type GetRecentTradesRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	StockId          string                 `protobuf:"bytes,1,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker      string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Limit            int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
 	SinceTimestampMs int64                  `protobuf:"varint,3,opt,name=since_timestamp_ms,json=sinceTimestampMs,proto3" json:"since_timestamp_ms,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -510,9 +510,9 @@ func (*GetRecentTradesRequest) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetRecentTradesRequest) GetStockId() string {
+func (x *GetRecentTradesRequest) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -580,7 +580,7 @@ func (x *GetRecentTradesResponse) GetTrades() []*PublicTrade {
 type PublicTrade struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	TradeId           string                 `protobuf:"bytes,1,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty"`
-	StockId           string                 `protobuf:"bytes,2,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker       string                 `protobuf:"bytes,2,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Quantity          int64                  `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	PriceCents        int64                  `protobuf:"varint,4,opt,name=price_cents,json=priceCents,proto3" json:"price_cents,omitempty"`
 	TotalValueCents   int64                  `protobuf:"varint,5,opt,name=total_value_cents,json=totalValueCents,proto3" json:"total_value_cents,omitempty"`
@@ -627,9 +627,9 @@ func (x *PublicTrade) GetTradeId() string {
 	return ""
 }
 
-func (x *PublicTrade) GetStockId() string {
+func (x *PublicTrade) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -672,7 +672,7 @@ func (x *PublicTrade) GetWasBuyerAggressor() bool {
 // StreamTradesRequest request to subscribe to real-time trade execution updates.
 type StreamTradesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StockId       string                 `protobuf:"bytes,1,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker   string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -707,9 +707,9 @@ func (*StreamTradesRequest) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *StreamTradesRequest) GetStockId() string {
+func (x *StreamTradesRequest) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -718,7 +718,7 @@ func (x *StreamTradesRequest) GetStockId() string {
 type TradeUpdate struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	TradeId           string                 `protobuf:"bytes,1,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty"`
-	StockId           string                 `protobuf:"bytes,2,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker       string                 `protobuf:"bytes,2,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Quantity          int64                  `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	PriceCents        int64                  `protobuf:"varint,4,opt,name=price_cents,json=priceCents,proto3" json:"price_cents,omitempty"`
 	TotalValueCents   int64                  `protobuf:"varint,5,opt,name=total_value_cents,json=totalValueCents,proto3" json:"total_value_cents,omitempty"`
@@ -765,9 +765,9 @@ func (x *TradeUpdate) GetTradeId() string {
 	return ""
 }
 
-func (x *TradeUpdate) GetStockId() string {
+func (x *TradeUpdate) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -810,7 +810,7 @@ func (x *TradeUpdate) GetWasBuyerAggressor() bool {
 // GetStockPricesRequest request to fetch current prices for multiple stocks.
 type GetStockPricesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StockIds      []string               `protobuf:"bytes,1,rep,name=stock_ids,json=stockIds,proto3" json:"stock_ids,omitempty"`
+	StockTickers  []string               `protobuf:"bytes,1,rep,name=stock_tickers,json=stockTickers,proto3" json:"stock_tickers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -845,9 +845,9 @@ func (*GetStockPricesRequest) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *GetStockPricesRequest) GetStockIds() []string {
+func (x *GetStockPricesRequest) GetStockTickers() []string {
 	if x != nil {
-		return x.StockIds
+		return x.StockTickers
 	}
 	return nil
 }
@@ -900,7 +900,7 @@ func (x *GetStockPricesResponse) GetPrices() []*common.StockPrice {
 // StreamPricesRequest request to subscribe to real-time price updates for stocks.
 type StreamPricesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StockIds      []string               `protobuf:"bytes,1,rep,name=stock_ids,json=stockIds,proto3" json:"stock_ids,omitempty"`
+	StockTickers  []string               `protobuf:"bytes,1,rep,name=stock_tickers,json=stockTickers,proto3" json:"stock_tickers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -935,9 +935,9 @@ func (*StreamPricesRequest) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *StreamPricesRequest) GetStockIds() []string {
+func (x *StreamPricesRequest) GetStockTickers() []string {
 	if x != nil {
-		return x.StockIds
+		return x.StockTickers
 	}
 	return nil
 }
@@ -945,7 +945,7 @@ func (x *StreamPricesRequest) GetStockIds() []string {
 // PriceUpdate represents a real-time update in a stock's price info.
 type PriceUpdate struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	StockId                  string                 `protobuf:"bytes,1,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker              string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Ticker                   string                 `protobuf:"bytes,2,opt,name=ticker,proto3" json:"ticker,omitempty"`
 	NewPriceCents            int64                  `protobuf:"varint,3,opt,name=new_price_cents,json=newPriceCents,proto3" json:"new_price_cents,omitempty"`
 	ChangeCents              int64                  `protobuf:"varint,4,opt,name=change_cents,json=changeCents,proto3" json:"change_cents,omitempty"`
@@ -986,9 +986,9 @@ func (*PriceUpdate) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *PriceUpdate) GetStockId() string {
+func (x *PriceUpdate) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -1086,7 +1086,7 @@ type GetUserOrdersRequest struct {
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	BotId         string                 `protobuf:"bytes,2,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
 	StatusFilter  []common.OrderStatus   `protobuf:"varint,3,rep,packed,name=status_filter,json=statusFilter,proto3,enum=common.types.OrderStatus" json:"status_filter,omitempty"`
-	StockId       string                 `protobuf:"bytes,4,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker   string                 `protobuf:"bytes,4,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Limit         int32                  `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
 	Offset        int64                  `protobuf:"varint,6,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1144,9 +1144,9 @@ func (x *GetUserOrdersRequest) GetStatusFilter() []common.OrderStatus {
 	return nil
 }
 
-func (x *GetUserOrdersRequest) GetStockId() string {
+func (x *GetUserOrdersRequest) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -1489,7 +1489,7 @@ func (x *MarketStats) GetTimestampMs() int64 {
 // StockStats represents aggregated statistics for a single stock.
 type StockStats struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	StockId           string                 `protobuf:"bytes,1,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker       string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Ticker            string                 `protobuf:"bytes,2,opt,name=ticker,proto3" json:"ticker,omitempty"`
 	TradesToday       int64                  `protobuf:"varint,3,opt,name=trades_today,json=tradesToday,proto3" json:"trades_today,omitempty"`
 	VolumeToday       int64                  `protobuf:"varint,4,opt,name=volume_today,json=volumeToday,proto3" json:"volume_today,omitempty"`
@@ -1529,9 +1529,9 @@ func (*StockStats) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *StockStats) GetStockId() string {
+func (x *StockStats) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -1575,12 +1575,12 @@ var File_proto_v1_market_data_market_data_proto protoreflect.FileDescriptor
 
 const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"\n" +
-	"&proto/v1/market_data/market_data.proto\x12\x13trading.market_data\x1a\x1bproto/v1/common/types.proto\"F\n" +
-	"\x13GetOrderBookRequest\x12\x19\n" +
-	"\bstock_id\x18\x01 \x01(\tR\astockId\x12\x14\n" +
-	"\x05depth\x18\x02 \x01(\x05R\x05depth\"\x8b\x02\n" +
-	"\tOrderBook\x12\x19\n" +
-	"\bstock_id\x18\x01 \x01(\tR\astockId\x123\n" +
+	"&proto/v1/market_data/market_data.proto\x12\x13trading.market_data\x1a\x1bproto/v1/common/types.proto\"N\n" +
+	"\x13GetOrderBookRequest\x12!\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12\x14\n" +
+	"\x05depth\x18\x02 \x01(\x05R\x05depth\"\x93\x02\n" +
+	"\tOrderBook\x12!\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x123\n" +
 	"\x04bids\x18\x02 \x03(\v2\x1f.trading.market_data.PriceLevelR\x04bids\x123\n" +
 	"\x04asks\x18\x03 \x03(\v2\x1f.trading.market_data.PriceLevelR\x04asks\x12!\n" +
 	"\ftimestamp_ms\x18\x04 \x01(\x03R\vtimestampMs\x123\n" +
@@ -1592,12 +1592,12 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"priceCents\x12\x1a\n" +
 	"\bquantity\x18\x02 \x01(\x03R\bquantity\x12\x1f\n" +
 	"\vorder_count\x18\x03 \x01(\x05R\n" +
-	"orderCount\"I\n" +
-	"\x16StreamOrderBookRequest\x12\x19\n" +
-	"\bstock_id\x18\x01 \x01(\tR\astockId\x12\x14\n" +
-	"\x05depth\x18\x02 \x01(\x05R\x05depth\"\xb1\x02\n" +
-	"\x0fOrderBookUpdate\x12\x19\n" +
-	"\bstock_id\x18\x01 \x01(\tR\astockId\x12!\n" +
+	"orderCount\"Q\n" +
+	"\x16StreamOrderBookRequest\x12!\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12\x14\n" +
+	"\x05depth\x18\x02 \x01(\x05R\x05depth\"\xb9\x02\n" +
+	"\x0fOrderBookUpdate\x12!\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12!\n" +
 	"\ftimestamp_ms\x18\x02 \x01(\x03R\vtimestampMs\x12C\n" +
 	"\n" +
 	"bid_deltas\x18\x03 \x03(\v2$.trading.market_data.PriceLevelDeltaR\tbidDeltas\x12C\n" +
@@ -1610,41 +1610,41 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"priceCents\x12!\n" +
 	"\fnew_quantity\x18\x02 \x01(\x03R\vnewQuantity\x12=\n" +
 	"\n" +
-	"delta_type\x18\x03 \x01(\x0e2\x1e.trading.market_data.DeltaTypeR\tdeltaType\"w\n" +
-	"\x16GetRecentTradesRequest\x12\x19\n" +
-	"\bstock_id\x18\x01 \x01(\tR\astockId\x12\x14\n" +
+	"delta_type\x18\x03 \x01(\x0e2\x1e.trading.market_data.DeltaTypeR\tdeltaType\"\x7f\n" +
+	"\x16GetRecentTradesRequest\x12!\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12,\n" +
 	"\x12since_timestamp_ms\x18\x03 \x01(\x03R\x10sinceTimestampMs\"S\n" +
 	"\x17GetRecentTradesResponse\x128\n" +
-	"\x06trades\x18\x01 \x03(\v2 .trading.market_data.PublicTradeR\x06trades\"\xff\x01\n" +
+	"\x06trades\x18\x01 \x03(\v2 .trading.market_data.PublicTradeR\x06trades\"\x87\x02\n" +
 	"\vPublicTrade\x12\x19\n" +
-	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12\x19\n" +
-	"\bstock_id\x18\x02 \x01(\tR\astockId\x12\x1a\n" +
+	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12!\n" +
+	"\fstock_ticker\x18\x02 \x01(\tR\vstockTicker\x12\x1a\n" +
 	"\bquantity\x18\x03 \x01(\x03R\bquantity\x12\x1f\n" +
 	"\vprice_cents\x18\x04 \x01(\x03R\n" +
 	"priceCents\x12*\n" +
 	"\x11total_value_cents\x18\x05 \x01(\x03R\x0ftotalValueCents\x12!\n" +
 	"\ftimestamp_ms\x18\x06 \x01(\x03R\vtimestampMs\x12.\n" +
-	"\x13was_buyer_aggressor\x18\a \x01(\bR\x11wasBuyerAggressor\"0\n" +
-	"\x13StreamTradesRequest\x12\x19\n" +
-	"\bstock_id\x18\x01 \x01(\tR\astockId\"\xff\x01\n" +
+	"\x13was_buyer_aggressor\x18\a \x01(\bR\x11wasBuyerAggressor\"8\n" +
+	"\x13StreamTradesRequest\x12!\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\"\x87\x02\n" +
 	"\vTradeUpdate\x12\x19\n" +
-	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12\x19\n" +
-	"\bstock_id\x18\x02 \x01(\tR\astockId\x12\x1a\n" +
+	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12!\n" +
+	"\fstock_ticker\x18\x02 \x01(\tR\vstockTicker\x12\x1a\n" +
 	"\bquantity\x18\x03 \x01(\x03R\bquantity\x12\x1f\n" +
 	"\vprice_cents\x18\x04 \x01(\x03R\n" +
 	"priceCents\x12*\n" +
 	"\x11total_value_cents\x18\x05 \x01(\x03R\x0ftotalValueCents\x12!\n" +
 	"\ftimestamp_ms\x18\x06 \x01(\x03R\vtimestampMs\x12.\n" +
-	"\x13was_buyer_aggressor\x18\a \x01(\bR\x11wasBuyerAggressor\"4\n" +
-	"\x15GetStockPricesRequest\x12\x1b\n" +
-	"\tstock_ids\x18\x01 \x03(\tR\bstockIds\"J\n" +
+	"\x13was_buyer_aggressor\x18\a \x01(\bR\x11wasBuyerAggressor\"<\n" +
+	"\x15GetStockPricesRequest\x12#\n" +
+	"\rstock_tickers\x18\x01 \x03(\tR\fstockTickers\"J\n" +
 	"\x16GetStockPricesResponse\x120\n" +
-	"\x06prices\x18\x01 \x03(\v2\x18.common.types.StockPriceR\x06prices\"2\n" +
-	"\x13StreamPricesRequest\x12\x1b\n" +
-	"\tstock_ids\x18\x01 \x03(\tR\bstockIds\"\x9a\x02\n" +
-	"\vPriceUpdate\x12\x19\n" +
-	"\bstock_id\x18\x01 \x01(\tR\astockId\x12\x16\n" +
+	"\x06prices\x18\x01 \x03(\v2\x18.common.types.StockPriceR\x06prices\":\n" +
+	"\x13StreamPricesRequest\x12#\n" +
+	"\rstock_tickers\x18\x01 \x03(\tR\fstockTickers\"\xa2\x02\n" +
+	"\vPriceUpdate\x12!\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12\x16\n" +
 	"\x06ticker\x18\x02 \x01(\tR\x06ticker\x12&\n" +
 	"\x0fnew_price_cents\x18\x03 \x01(\x03R\rnewPriceCents\x12!\n" +
 	"\fchange_cents\x18\x04 \x01(\x03R\vchangeCents\x12=\n" +
@@ -1652,12 +1652,12 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"\ftimestamp_ms\x18\x06 \x01(\x03R\vtimestampMs\x12+\n" +
 	"\x12caused_by_trade_id\x18\a \x01(\tR\x0fcausedByTradeId\",\n" +
 	"\x0fGetOrderRequest\x12\x19\n" +
-	"\border_id\x18\x01 \x01(\tR\aorderId\"\xcf\x01\n" +
+	"\border_id\x18\x01 \x01(\tR\aorderId\"\xd7\x01\n" +
 	"\x14GetUserOrdersRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
 	"\x06bot_id\x18\x02 \x01(\tR\x05botId\x12>\n" +
-	"\rstatus_filter\x18\x03 \x03(\x0e2\x19.common.types.OrderStatusR\fstatusFilter\x12\x19\n" +
-	"\bstock_id\x18\x04 \x01(\tR\astockId\x12\x14\n" +
+	"\rstatus_filter\x18\x03 \x03(\x0e2\x19.common.types.OrderStatusR\fstatusFilter\x12!\n" +
+	"\fstock_ticker\x18\x04 \x01(\tR\vstockTicker\x12\x14\n" +
 	"\x05limit\x18\x05 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x06 \x01(\x03R\x06offset\"e\n" +
 	"\x15GetUserOrdersResponse\x12+\n" +
@@ -1685,10 +1685,10 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"\x13active_orders_count\x18\x03 \x01(\x05R\x11activeOrdersCount\x12@\n" +
 	"\vstock_stats\x18\x04 \x03(\v2\x1f.trading.market_data.StockStatsR\n" +
 	"stockStats\x12!\n" +
-	"\ftimestamp_ms\x18\x05 \x01(\x03R\vtimestampMs\"\xda\x01\n" +
+	"\ftimestamp_ms\x18\x05 \x01(\x03R\vtimestampMs\"\xe2\x01\n" +
 	"\n" +
-	"StockStats\x12\x19\n" +
-	"\bstock_id\x18\x01 \x01(\tR\astockId\x12\x16\n" +
+	"StockStats\x12!\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12\x16\n" +
 	"\x06ticker\x18\x02 \x01(\tR\x06ticker\x12!\n" +
 	"\ftrades_today\x18\x03 \x01(\x03R\vtradesToday\x12!\n" +
 	"\fvolume_today\x18\x04 \x01(\x03R\vvolumeToday\x12#\n" +

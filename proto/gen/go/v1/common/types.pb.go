@@ -263,7 +263,7 @@ type Order struct {
 	OrderId               string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	UserId                string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	BotId                 string                 `protobuf:"bytes,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
-	StockId               string                 `protobuf:"bytes,4,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker           string                 `protobuf:"bytes,4,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	OrderType             OrderType              `protobuf:"varint,5,opt,name=order_type,json=orderType,proto3,enum=common.types.OrderType" json:"order_type,omitempty"`
 	Side                  OrderSide              `protobuf:"varint,6,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
 	Quantity              int64                  `protobuf:"varint,7,opt,name=quantity,proto3" json:"quantity,omitempty"`
@@ -329,9 +329,9 @@ func (x *Order) GetBotId() string {
 	return ""
 }
 
-func (x *Order) GetStockId() string {
+func (x *Order) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -410,7 +410,7 @@ func (x *Order) GetAverageFillPriceCents() int64 {
 type Trade struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	TradeId         string                 `protobuf:"bytes,1,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty"`
-	StockId         string                 `protobuf:"bytes,2,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker     string                 `protobuf:"bytes,2,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	BuyerOrderId    string                 `protobuf:"bytes,3,opt,name=buyer_order_id,json=buyerOrderId,proto3" json:"buyer_order_id,omitempty"`
 	SellerOrderId   string                 `protobuf:"bytes,4,opt,name=seller_order_id,json=sellerOrderId,proto3" json:"seller_order_id,omitempty"`
 	BuyerUserId     string                 `protobuf:"bytes,5,opt,name=buyer_user_id,json=buyerUserId,proto3" json:"buyer_user_id,omitempty"`
@@ -462,9 +462,9 @@ func (x *Trade) GetTradeId() string {
 	return ""
 }
 
-func (x *Trade) GetStockId() string {
+func (x *Trade) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -542,7 +542,7 @@ func (x *Trade) GetExecutedAtMs() int64 {
 // StockPrice represents current and recent price information for a stock.
 type StockPrice struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	StockId                  string                 `protobuf:"bytes,1,opt,name=stock_id,json=stockId,proto3" json:"stock_id,omitempty"`
+	StockTicker              string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Ticker                   string                 `protobuf:"bytes,2,opt,name=ticker,proto3" json:"ticker,omitempty"`
 	CurrentPriceCents        int64                  `protobuf:"varint,3,opt,name=current_price_cents,json=currentPriceCents,proto3" json:"current_price_cents,omitempty"`
 	PreviousCloseCents       int64                  `protobuf:"varint,4,opt,name=previous_close_cents,json=previousCloseCents,proto3" json:"previous_close_cents,omitempty"`
@@ -586,9 +586,9 @@ func (*StockPrice) Descriptor() ([]byte, []int) {
 	return file_proto_v1_common_types_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *StockPrice) GetStockId() string {
+func (x *StockPrice) GetStockTicker() string {
 	if x != nil {
-		return x.StockId
+		return x.StockTicker
 	}
 	return ""
 }
@@ -660,12 +660,12 @@ var File_proto_v1_common_types_proto protoreflect.FileDescriptor
 
 const file_proto_v1_common_types_proto_rawDesc = "" +
 	"\n" +
-	"\x1bproto/v1/common/types.proto\x12\fcommon.types\"\xa6\x04\n" +
+	"\x1bproto/v1/common/types.proto\x12\fcommon.types\"\xae\x04\n" +
 	"\x05Order\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x03 \x01(\tR\x05botId\x12\x19\n" +
-	"\bstock_id\x18\x04 \x01(\tR\astockId\x126\n" +
+	"\x06bot_id\x18\x03 \x01(\tR\x05botId\x12!\n" +
+	"\fstock_ticker\x18\x04 \x01(\tR\vstockTicker\x126\n" +
 	"\n" +
 	"order_type\x18\x05 \x01(\x0e2\x17.common.types.OrderTypeR\torderType\x12+\n" +
 	"\x04side\x18\x06 \x01(\x0e2\x17.common.types.OrderSideR\x04side\x12\x1a\n" +
@@ -677,10 +677,10 @@ const file_proto_v1_common_types_proto_rawDesc = "" +
 	"\x06status\x18\v \x01(\x0e2\x19.common.types.OrderStatusR\x06status\x12\"\n" +
 	"\rcreated_at_ms\x18\f \x01(\x03R\vcreatedAtMs\x12\"\n" +
 	"\rupdated_at_ms\x18\r \x01(\x03R\vupdatedAtMs\x127\n" +
-	"\x18average_fill_price_cents\x18\x0e \x01(\x03R\x15averageFillPriceCents\"\xaa\x03\n" +
+	"\x18average_fill_price_cents\x18\x0e \x01(\x03R\x15averageFillPriceCents\"\xb2\x03\n" +
 	"\x05Trade\x12\x19\n" +
-	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12\x19\n" +
-	"\bstock_id\x18\x02 \x01(\tR\astockId\x12$\n" +
+	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12!\n" +
+	"\fstock_ticker\x18\x02 \x01(\tR\vstockTicker\x12$\n" +
 	"\x0ebuyer_order_id\x18\x03 \x01(\tR\fbuyerOrderId\x12&\n" +
 	"\x0fseller_order_id\x18\x04 \x01(\tR\rsellerOrderId\x12\"\n" +
 	"\rbuyer_user_id\x18\x05 \x01(\tR\vbuyerUserId\x12 \n" +
@@ -693,10 +693,10 @@ const file_proto_v1_common_types_proto_rawDesc = "" +
 	" \x01(\x03R\n" +
 	"priceCents\x12*\n" +
 	"\x11total_value_cents\x18\v \x01(\x03R\x0ftotalValueCents\x12$\n" +
-	"\x0eexecuted_at_ms\x18\f \x01(\x03R\fexecutedAtMs\"\x8f\x03\n" +
+	"\x0eexecuted_at_ms\x18\f \x01(\x03R\fexecutedAtMs\"\x97\x03\n" +
 	"\n" +
-	"StockPrice\x12\x19\n" +
-	"\bstock_id\x18\x01 \x01(\tR\astockId\x12\x16\n" +
+	"StockPrice\x12!\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12\x16\n" +
 	"\x06ticker\x18\x02 \x01(\tR\x06ticker\x12.\n" +
 	"\x13current_price_cents\x18\x03 \x01(\x03R\x11currentPriceCents\x120\n" +
 	"\x14previous_close_cents\x18\x04 \x01(\x03R\x12previousCloseCents\x12!\n" +

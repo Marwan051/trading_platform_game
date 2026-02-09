@@ -50,7 +50,7 @@ message Order {
   string order_id = 1;
   string user_id = 2;
   string bot_id = 3;
-  string stock_id = 4;
+  string stock_ticker = 4;
   OrderType order_type = 5;
   OrderSide side = 6;
   int64 quantity = 7;
@@ -66,7 +66,7 @@ message Order {
 // Trade represents an executed trade.
 message Trade {
   string trade_id = 1;
-  string stock_id = 2;
+  string stock_ticker = 2;
   string buyer_order_id = 3;
   string seller_order_id = 4;
   string buyer_user_id = 5;
@@ -81,7 +81,7 @@ message Trade {
 
 // StockPrice represents current and recent price information for a stock.
 message StockPrice {
-  string stock_id = 1;
+  string stock_ticker = 1;
   string ticker = 2;
   int64 current_price_cents = 3;
   int64 previous_close_cents = 4;

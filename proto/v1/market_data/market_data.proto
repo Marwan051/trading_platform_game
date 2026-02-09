@@ -38,13 +38,13 @@ service MarketDataService {
 
 // GetOrderBookRequest request for fetching snapshot of order book.
 message GetOrderBookRequest {
-  string stock_id = 1;
+  string stock_ticker = 1;
   int32 depth = 2;
 }
 
 // OrderBook represents a snapshot of the current state of the order book for a given stock.
 message OrderBook {
-  string stock_id = 1;
+  string stock_ticker = 1;
   repeated PriceLevel bids = 2;
   repeated PriceLevel asks = 3;
   int64 timestamp_ms = 4;
@@ -61,13 +61,13 @@ message PriceLevel {
 
 // StreamOrderBookRequest request to subscribe to real-time updates for an order book.
 message StreamOrderBookRequest {
-  string stock_id = 1;
+  string stock_ticker = 1;
   int32 depth = 2;
 }
 
 // OrderBookUpdate represents an incremental update to the order book state.
 message OrderBookUpdate {
-  string stock_id = 1;
+  string stock_ticker = 1;
   int64 timestamp_ms = 2;
   repeated PriceLevelDelta bid_deltas = 3;
   repeated PriceLevelDelta ask_deltas = 4;
@@ -92,7 +92,7 @@ enum DeltaType {
 
 // GetRecentTradesRequest request to fetch historical trades for a stock.
 message GetRecentTradesRequest {
-  string stock_id = 1;
+  string stock_ticker = 1;
   int32 limit = 2;
   int64 since_timestamp_ms = 3;
 }
@@ -105,7 +105,7 @@ message GetRecentTradesResponse {
 // PublicTrade represents a trade that has occurred in the public market.
 message PublicTrade {
   string trade_id = 1;
-  string stock_id = 2;
+  string stock_ticker = 2;
   int64 quantity = 3;
   int64 price_cents = 4;
   int64 total_value_cents = 5;
@@ -115,13 +115,13 @@ message PublicTrade {
 
 // StreamTradesRequest request to subscribe to real-time trade execution updates.
 message StreamTradesRequest {
-  string stock_id = 1;
+  string stock_ticker = 1;
 }
 
 // TradeUpdate represents a real-time update of a newly executed trade.
 message TradeUpdate {
   string trade_id = 1;
-  string stock_id = 2;
+  string stock_ticker = 2;
   int64 quantity = 3;
   int64 price_cents = 4;
   int64 total_value_cents = 5;
@@ -131,7 +131,7 @@ message TradeUpdate {
 
 // GetStockPricesRequest request to fetch current prices for multiple stocks.
 message GetStockPricesRequest {
-  repeated string stock_ids = 1;
+  repeated string stock_tickers = 1;
 }
 
 // GetStockPricesResponse response containing current prices for requested stocks.
@@ -141,12 +141,12 @@ message GetStockPricesResponse {
 
 // StreamPricesRequest request to subscribe to real-time price updates for stocks.
 message StreamPricesRequest {
-  repeated string stock_ids = 1;
+  repeated string stock_tickers = 1;
 }
 
 // PriceUpdate represents a real-time update in a stock's price info.
 message PriceUpdate {
-  string stock_id = 1;
+  string stock_ticker = 1;
   string ticker = 2;
   int64 new_price_cents = 3;
   int64 change_cents = 4;
@@ -165,7 +165,7 @@ message GetUserOrdersRequest {
   string user_id = 1;
   string bot_id = 2;
   repeated common.types.OrderStatus status_filter = 3;
-  string stock_id = 4;
+  string stock_ticker = 4;
   int32 limit = 5;
   int64 offset = 6;
 }
@@ -208,7 +208,7 @@ message MarketStats {
 
 // StockStats represents aggregated statistics for a single stock.
 message StockStats {
-  string stock_id = 1;
+  string stock_ticker = 1;
   string ticker = 2;
   int64 trades_today = 3;
   int64 volume_today = 4;
