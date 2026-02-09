@@ -43,11 +43,11 @@ type OrderCancelledEvent struct {
 }
 
 type OrderFilledEvent struct {
-	OrderID               string `json:"order_id"`
-	UserID                string `json:"user_id"`
-	BotID                 string `json:"bot_id"`
-	TotalQuantity         int64  `json:"total_quantity"`
-	AverageFillPriceCents int64  `json:"average_fill_price_cents"`
+	OrderID        string `json:"order_id"`
+	UserID         string `json:"user_id"`
+	BotID          string `json:"bot_id"`
+	Quantity       int64  `json:"total_quantity"`
+	FillPriceCents int64  `json:"fill_price_cents"`
 }
 
 type OrderPartiallyFilledEvent struct {
@@ -69,7 +69,7 @@ type OrderRejectedEvent struct {
 
 type TradeExecutedEvent struct {
 	TradeID         string `json:"trade_id"`
-	StockID         string `json:"stock_id"`
+	StockTicker     string `json:"stock_ticker"`
 	BuyerOrderID    string `json:"buyer_order_id"`
 	SellerOrderID   string `json:"seller_order_id"`
 	BuyerUserID     string `json:"buyer_user_id"`
@@ -82,7 +82,7 @@ type TradeExecutedEvent struct {
 }
 
 type PriceChangedEvent struct {
-	StockID         string `json:"stock_id"`
+	StockTicker     string `json:"stock_ticker"`
 	OldPriceCents   int64  `json:"old_price_cents"`
 	NewPriceCents   int64  `json:"new_price_cents"`
 	CausedByTradeID string `json:"caused_by_trade_id"`

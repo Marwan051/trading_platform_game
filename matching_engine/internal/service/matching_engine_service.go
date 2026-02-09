@@ -61,13 +61,13 @@ func (s *MatchingEngineService) PlaceOrder(ctx context.Context, req *pb.PlaceOrd
 	}
 
 	order := &types.Order{
-		OrderId:    orderID,
-		Stock:      req.StockTicker,
-		OrderType:  orderType,
-		OrderSide:  orderSide,
-		Quantity:   int(req.Quantity),
-		LimitPrice: int(req.LimitPriceCents),
-		Timestamp:  time.Now(),
+		OrderId:     orderID,
+		StockTicker: req.StockTicker,
+		OrderType:   orderType,
+		OrderSide:   orderSide,
+		Quantity:    int64(req.Quantity),
+		LimitPrice:  int64(req.LimitPriceCents),
+		Timestamp:   time.Now(),
 	}
 	matches, remainingQty, err := s.engine.SubmitOrder(order)
 	if err != nil {

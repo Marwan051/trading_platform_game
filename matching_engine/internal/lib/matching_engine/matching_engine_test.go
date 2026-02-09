@@ -9,15 +9,15 @@ import (
 )
 
 // Helper to create an order
-func newOrder(id, stock string, side types.OrderSide, orderType types.OrderType, qty, price int) *types.Order {
+func newOrder(id, stock string, side types.OrderSide, orderType types.OrderType, qty, price int64) *types.Order {
 	return &types.Order{
-		OrderId:    id,
-		Stock:      stock,
-		OrderSide:  side,
-		OrderType:  orderType,
-		Quantity:   qty,
-		LimitPrice: price,
-		Timestamp:  time.Now(),
+		OrderId:     id,
+		StockTicker: stock,
+		OrderSide:   side,
+		OrderType:   orderType,
+		Quantity:    qty,
+		LimitPrice:  price,
+		Timestamp:   time.Now(),
 	}
 }
 
@@ -291,7 +291,7 @@ func TestMatchingEngineConcurrency(t *testing.T) {
 					types.OrderSide(id%2),
 					types.LimitOrder,
 					10,
-					15000+id,
+					int64(15000+id),
 				)
 				engine.SubmitOrder(order)
 				done <- true
