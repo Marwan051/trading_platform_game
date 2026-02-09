@@ -85,7 +85,15 @@ func (s *MatchingEngineService) PlaceOrder(ctx context.Context, req *pb.PlaceOrd
 }
 
 func (s *MatchingEngineService) CancelOrder(ctx context.Context, req *pb.CancelOrderRequest) (*pb.CancelOrderResponse, error) {
-	found, err := s.engine.CancelOrder(req.StockTicker, req.OrderId, types.OrderSide(req.Side))
+	// Convert protobuf enum (1-indexed) to Go enum (0-indexed)
+	var orderSide types.OrderSide
+	if req.Side == 1 {
+		orderSide = types.Buy
+	} else {
+		orderSide = types.Sell
+	}
+
+	found, err := s.engine.CancelOrder(req.StockTicker, req.OrderId, orderSide)
 	if err != nil {
 		s.logger.Error("Failed to cancel order", "error", err, "order_id", req.OrderId)
 		return nil, status.Errorf(codes.InvalidArgument, "failed to cancel order: %v", err)
