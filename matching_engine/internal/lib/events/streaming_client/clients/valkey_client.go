@@ -30,6 +30,12 @@ type ValkeyClient struct {
 	maxRetries int
 }
 
+type ValkeyOptions struct {
+	ValkeyHost       string
+	ValkeyPort       int
+	ValkeyStreamName string
+}
+
 func NewValkeyClient(host string, port int, streamName string, bufferSize int) (*ValkeyClient, error) {
 	clientConfig := config.NewClientConfiguration().WithAddress(&config.NodeAddress{
 		Host: host,

@@ -21,9 +21,9 @@ type MatchingEngineService struct {
 	engine matchingengine.MatchingEngine
 }
 
-func NewMatchingEngineService(logger *slog.Logger) *MatchingEngineService {
+func NewMatchingEngineService(logger *slog.Logger, valkeyOptions clients.ValkeyOptions) *MatchingEngineService {
 	valkeyStreamingClient, err := clients.NewValkeyClient(
-		"localhost", 6379, "matching_engine_stream", 10000,
+		valkeyOptions.ValkeyHost, valkeyOptions.ValkeyPort, valkeyOptions.ValkeyStreamName, 10000,
 	)
 	if err != nil {
 		log.Fatalf("Could not connect to event streaming client with error: %s", err)

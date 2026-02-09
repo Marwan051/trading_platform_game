@@ -10,6 +10,7 @@ import (
 
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/config"
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/interceptors"
+	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/events/streaming_client/clients"
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/service"
 	pb "github.com/Marwan051/tradding_platform_game/proto/gen/go/v1/matching_engine"
 )
@@ -31,7 +32,11 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 	)
 
 	// Register services
-	matchingService := service.NewMatchingEngineService(logger)
+	matchingService := service.NewMatchingEngineService(logger, clients.ValkeyOptions{
+		ValkeyHost:       cfg.ValkeyHost,
+		ValkeyPort:       cfg.ValkeyPort,
+		ValkeyStreamName: cfg.ValkeyStreamName,
+	})
 	pb.RegisterMatchingEngineServer(grpcServer, matchingService)
 
 	// Enable reflection for development (grpcurl, grpcui)
