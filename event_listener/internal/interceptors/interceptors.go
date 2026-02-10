@@ -5,49 +5,66 @@ import (
 	"log/slog"
 	"runtime/debug"
 	"time"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
-// Logger logs request details
-func Logger(logger *slog.Logger) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		start := time.Now()
+// EventHandler represents a function that processes an event from Valkey stream
+type EventHandler func(ctx context.Context, eventID string, data map[string]any) error
 
-		resp, err := handler(ctx, req)
+// EventProcessorMiddleware represents middleware that wraps event processing
+type EventProcessorMiddleware func(EventHandler) EventHandler
 
-		duration := time.Since(start)
-		code := codes.OK
-		if err != nil {
-			code = status.Code(err)
+// Logger logs event processing details
+func Logger(logger *slog.Logger) EventProcessorMiddleware {
+	return func(next EventHandler) EventHandler {
+		return func(ctx context.Context, eventID string, data map[string]any) error {
+			start := time.Now()
+
+			err := next(ctx, eventID, data)
+
+			duration := time.Since(start)
+			status := "success"
+			if err != nil {
+				status = "error"
+			}
+
+			logger.Info("event processed",
+				"event_id", eventID,
+				"status", status,
+				"duration", duration.String(),
+				"error", err,
+			)
+
+			return err
 		}
-
-		logger.Info("grpc request",
-			"method", info.FullMethod,
-			"code", code.String(),
-			"duration", duration.String(),
-		)
-
-		return resp, err
 	}
 }
 
-// Recovery recovers from panics in handlers
-func Recovery(logger *slog.Logger) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-		defer func() {
-			if r := recover(); r != nil {
-				logger.Error("panic recovered",
-					"error", r,
-					"method", info.FullMethod,
-					"stack", string(debug.Stack()),
-				)
-				err = status.Errorf(codes.Internal, "internal server error")
-			}
-		}()
+// Recovery recovers from panics during event processing
+func Recovery(logger *slog.Logger) EventProcessorMiddleware {
+	return func(next EventHandler) EventHandler {
+		return func(ctx context.Context, eventID string, data map[string]interface{}) (err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("panic recovered during event processing",
+						"error", r,
+						"event_id", eventID,
+						"stack", string(debug.Stack()),
+					)
+					err = nil // Don't propagate panic as error, just log it
+				}
+			}()
 
-		return handler(ctx, req)
+			return next(ctx, eventID, data)
+		}
+	}
+}
+
+// Chain combines multiple middlewares into a single middleware
+func Chain(middlewares ...EventProcessorMiddleware) EventProcessorMiddleware {
+	return func(final EventHandler) EventHandler {
+		for i := len(middlewares) - 1; i >= 0; i-- {
+			final = middlewares[i](final)
+		}
+		return final
 	}
 }
