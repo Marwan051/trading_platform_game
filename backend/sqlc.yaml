@@ -1,8 +1,8 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    queries: "./database/queries/"
-    schema: "./database/migrations/"
+    queries: "../database/queries/market_and_user_data/"
+    schema: "../database/migrations/"
     gen:
       go:
         package: "db"
