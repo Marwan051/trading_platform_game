@@ -7,10 +7,10 @@ CREATE TABLE trades (
     seller_order_id UUID NOT NULL REFERENCES orders(id),
     buyer_user_id TEXT,
     -- References Better Auth user.id
-    buyer_bot_id UUID REFERENCES bots(id),
+    buyer_bot_id BIGINT REFERENCES bots(id),
     seller_user_id TEXT,
     -- References Better Auth user.id
-    seller_bot_id UUID REFERENCES bots(id),
+    seller_bot_id BIGINT REFERENCES bots(id),
     quantity BIGINT NOT NULL CHECK (quantity > 0),
     price_cents BIGINT NOT NULL CHECK (price_cents > 0),
     total_value_cents BIGINT NOT NULL,

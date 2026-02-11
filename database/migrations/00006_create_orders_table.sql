@@ -4,7 +4,7 @@ CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id TEXT,
     -- References Better Auth user.id
-    bot_id UUID REFERENCES bots(id) ON DELETE CASCADE,
+    bot_id BIGINT REFERENCES bots(id) ON DELETE CASCADE,
     stock_ticker TEXT NOT NULL REFERENCES stocks(ticker) ON DELETE CASCADE,
     order_type TEXT NOT NULL CHECK (order_type IN ('MARKET', 'LIMIT')),
     side TEXT NOT NULL CHECK (side IN ('BUY', 'SELL')),

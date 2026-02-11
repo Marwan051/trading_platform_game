@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE bots (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     owner_user_id TEXT,
     -- References Better Auth user.id, NULL for system bots
     bot_name TEXT UNIQUE NOT NULL,
