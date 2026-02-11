@@ -1,5 +1,5 @@
 # multi-stage build - use Debian instead of Alpine for glibc (required by glide)
-FROM golang:1.26-bookworm AS builder
+FROM golang:1.26-trixie AS builder
 WORKDIR /src
 
 # cache dependencies
