@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE user_profile (
+CREATE TABLE user_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id TEXT UNIQUE NOT NULL,
     -- References Better Auth's user.id (TEXT type)
