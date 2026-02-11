@@ -5,7 +5,7 @@ CREATE TABLE orders (
     user_id TEXT,
     -- References Better Auth user.id
     bot_id UUID REFERENCES bots(id) ON DELETE CASCADE,
-    stock_id UUID NOT NULL REFERENCES stocks(id) ON DELETE CASCADE,
+    stock_ticker UUID NOT NULL REFERENCES stocks(id) ON DELETE CASCADE,
     order_type TEXT NOT NULL CHECK (order_type IN ('MARKET', 'LIMIT')),
     side TEXT NOT NULL CHECK (side IN ('BUY', 'SELL')),
     quantity BIGINT NOT NULL CHECK (quantity > 0),
@@ -43,10 +43,10 @@ CREATE INDEX idx_orders_user ON orders(user_id)
 WHERE user_id IS NOT NULL;
 CREATE INDEX idx_orders_bot ON orders(bot_id)
 WHERE bot_id IS NOT NULL;
-CREATE INDEX idx_orders_stock ON orders(stock_id);
+CREATE INDEX idx_orders_stock ON orders(stock_ticker);
 CREATE INDEX idx_orders_status ON orders(status)
 WHERE status IN ('PENDING', 'PARTIAL');
-CREATE INDEX idx_orders_book ON orders(stock_id, side, status, limit_price_cents)
+CREATE INDEX idx_orders_book ON orders(stock_ticker, side, status, limit_price_cents)
 WHERE status IN ('PENDING', 'PARTIAL')
     AND order_type = 'LIMIT';
 -- +goose StatementEnd

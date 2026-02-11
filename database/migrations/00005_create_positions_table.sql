@@ -5,7 +5,7 @@ CREATE TABLE positions (
     user_id TEXT,
     -- References Better Auth user.id
     bot_id UUID REFERENCES bots(id) ON DELETE CASCADE,
-    stock_id UUID NOT NULL REFERENCES stocks(id) ON DELETE CASCADE,
+    stock_ticker UUID NOT NULL REFERENCES stocks(id) ON DELETE CASCADE,
     quantity BIGINT NOT NULL CHECK (quantity > 0),
     average_cost_cents BIGINT NOT NULL,
     total_cost_cents BIGINT NOT NULL,
@@ -21,14 +21,14 @@ CREATE TABLE positions (
             AND bot_id IS NOT NULL
         )
     ),
-    UNIQUE(user_id, stock_id),
-    UNIQUE(bot_id, stock_id)
+    UNIQUE(user_id, stock_ticker),
+    UNIQUE(bot_id, stock_ticker)
 );
 CREATE INDEX idx_positions_user ON positions(user_id)
 WHERE user_id IS NOT NULL;
 CREATE INDEX idx_positions_bot ON positions(bot_id)
 WHERE bot_id IS NOT NULL;
-CREATE INDEX idx_positions_stock ON positions(stock_id);
+CREATE INDEX idx_positions_stock ON positions(stock_ticker);
 -- +goose StatementEnd
 -- +goose Down
 -- +goose StatementBegin

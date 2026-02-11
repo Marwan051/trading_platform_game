@@ -5,7 +5,7 @@ DECLARE v_portfolio_value_cents BIGINT;
 BEGIN
 SELECT COALESCE(SUM(up.quantity * s.current_price_cents), 0) INTO v_portfolio_value_cents
 FROM positions up
-    JOIN stocks s ON up.stock_id = s.id
+    JOIN stocks s ON up.stock_ticker = s.id
 WHERE up.user_id = p_user_id;
 UPDATE user_profile
 SET total_portfolio_value_cents = cash_balance_cents + v_portfolio_value_cents,
@@ -20,7 +20,7 @@ DECLARE v_portfolio_value_cents BIGINT;
 BEGIN
 SELECT COALESCE(SUM(up.quantity * s.current_price_cents), 0) INTO v_portfolio_value_cents
 FROM user_positions up
-    JOIN stocks s ON up.stock_id = s.id
+    JOIN stocks s ON up.stock_ticker = s.id
 WHERE up.bot_id = p_bot_id;
 UPDATE bots
 SET total_portfolio_value_cents = cash_balance_cents + v_portfolio_value_cents,
@@ -30,7 +30,7 @@ RETURN v_portfolio_value_cents;
 END;
 $ LANGUAGE plpgsql;
 -- Function to get order book depth
-CREATE OR REPLACE FUNCTION get_order_book(p_stock_id UUID, p_depth INTEGER DEFAULT 10) RETURNS TABLE(
+CREATE OR REPLACE FUNCTION get_order_book(p_stock_ticker UUID, p_depth INTEGER DEFAULT 10) RETURNS TABLE(
         side TEXT,
         price_cents BIGINT,
         quantity BIGINT
@@ -39,7 +39,7 @@ CREATE OR REPLACE FUNCTION get_order_book(p_stock_id UUID, p_depth INTEGER DEFAU
             o.limit_price_cents,
             SUM(o.remaining_quantity)
         FROM orders o
-        WHERE o.stock_id = p_stock_id
+        WHERE o.stock_ticker = p_stock_ticker
             AND o.side = 'BUY'
             AND o.status IN ('PENDING', 'PARTIAL')
             AND o.order_type = 'LIMIT'
@@ -53,7 +53,7 @@ UNION ALL
         o.limit_price_cents,
         SUM(o.remaining_quantity)
     FROM orders o
-    WHERE o.stock_id = p_stock_id
+    WHERE o.stock_ticker = p_stock_ticker
         AND o.side = 'SELL'
         AND o.status IN ('PENDING', 'PARTIAL')
         AND o.order_type = 'LIMIT'

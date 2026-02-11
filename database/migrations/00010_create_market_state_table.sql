@@ -8,8 +8,8 @@ CREATE TABLE market_stats (
     active_bots_24h INTEGER DEFAULT 0,
     total_trades_24h BIGINT DEFAULT 0,
     total_volume_24h_cents BIGINT DEFAULT 0,
-    top_gainer_stock_id UUID REFERENCES stocks(id),
-    top_loser_stock_id UUID REFERENCES stocks(id),
+    top_gainer_stock_ticker UUID REFERENCES stocks(id),
+    top_loser_stock_ticker UUID REFERENCES stocks(id),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 INSERT INTO market_stats (id)

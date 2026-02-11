@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE MATERIALIZED VIEW price_1min WITH (timescaledb.continuous) AS
-SELECT stock_id,
+SELECT stock_ticker,
     time_bucket('1 minute', executed_at) AS bucket,
     FIRST(price_cents, executed_at) AS open_cents,
     MAX(price_cents) AS high_cents,
@@ -10,7 +10,7 @@ SELECT stock_id,
     SUM(quantity) AS volume,
     COUNT(*) AS trade_count
 FROM trades
-GROUP BY stock_id,
+GROUP BY stock_ticker,
     bucket WITH NO DATA;
 SELECT add_continuous_aggregate_policy(
         'price_1min',
@@ -20,7 +20,7 @@ SELECT add_continuous_aggregate_policy(
     );
 -- 1-hour OHLCV aggregate
 CREATE MATERIALIZED VIEW price_1hour WITH (timescaledb.continuous) AS
-SELECT stock_id,
+SELECT stock_ticker,
     time_bucket('1 hour', executed_at) AS bucket,
     FIRST(price_cents, executed_at) AS open_cents,
     MAX(price_cents) AS high_cents,
@@ -29,7 +29,7 @@ SELECT stock_id,
     SUM(quantity) AS volume,
     COUNT(*) AS trade_count
 FROM trades
-GROUP BY stock_id,
+GROUP BY stock_ticker,
     bucket WITH NO DATA;
 SELECT add_continuous_aggregate_policy(
         'price_1hour',

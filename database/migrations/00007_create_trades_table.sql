@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE trades (
     id UUID DEFAULT gen_random_uuid(),
-    stock_id UUID NOT NULL REFERENCES stocks(id) ON DELETE CASCADE,
+    stock_ticker UUID NOT NULL REFERENCES stocks(id) ON DELETE CASCADE,
     buyer_order_id UUID NOT NULL REFERENCES orders(id),
     seller_order_id UUID NOT NULL REFERENCES orders(id),
     buyer_user_id TEXT,
@@ -43,7 +43,7 @@ SELECT create_hypertable(
         chunk_time_interval => INTERVAL '1 day',
         if_not_exists => TRUE
     );
-CREATE INDEX idx_trades_stock_time ON trades(stock_id, executed_at DESC);
+CREATE INDEX idx_trades_stock_time ON trades(stock_ticker, executed_at DESC);
 CREATE INDEX idx_trades_buyer_user ON trades(buyer_user_id, executed_at DESC)
 WHERE buyer_user_id IS NOT NULL;
 CREATE INDEX idx_trades_buyer_bot ON trades(buyer_bot_id, executed_at DESC)
