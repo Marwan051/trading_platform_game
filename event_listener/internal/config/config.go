@@ -7,7 +7,6 @@ import (
 )
 
 type Config struct {
-	GRPCAddr         string
 	Environment      string
 	ShutdownTimeout  time.Duration
 	ValkeyHost       string
@@ -17,7 +16,6 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		GRPCAddr:         getEnv("GRPC_ADDR", ":50051"),
 		Environment:      getEnv("ENVIRONMENT", "development"),
 		ShutdownTimeout:  getDurationEnv("SHUTDOWN_TIMEOUT", 30*time.Second),
 		ValkeyHost:       getEnv("VALKEY_HOST", "localhost"),
