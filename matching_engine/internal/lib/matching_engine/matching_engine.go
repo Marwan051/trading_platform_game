@@ -100,7 +100,13 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 		return nil, 0, errors.New("limit price must be greater than 0")
 	}
 
-	// Emit OrderPlacedEvent immediately after validation - order has been accepted
+	orderBook := me.getOrCreateOrderBook(order.StockTicker)
+
+	// Lock only this stock's order book
+	orderBook.Mu.Lock()
+	defer orderBook.Mu.Unlock()
+
+	// Emit OrderPlacedEvent - order has been accepted
 	if me.eventStreamer != nil {
 		me.eventStreamer.Publish(context.Background(), &types.OrderPlacedEvent{
 			OrderID:         order.OrderId,
@@ -113,12 +119,6 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 			LimitPriceCents: order.LimitPrice,
 		}, types.OrderPlaced)
 	}
-
-	orderBook := me.getOrCreateOrderBook(order.StockTicker)
-
-	// Lock only this stock's order book
-	orderBook.Mu.Lock()
-	defer orderBook.Mu.Unlock()
 
 	if order.OrderSide == types.Buy {
 		matches, remaining := me.matchBuyOrder(orderBook, order)
@@ -133,6 +133,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 	var matches []types.MatchedEvent
 	remainingQty := buyOrder.Quantity
 	originalBuyQty := buyOrder.Quantity
+	remainingBalance := buyOrder.AvailableBalance // Track remaining cash for market orders
 
 	// Iterate through best asks using heap
 	for remainingQty > 0 {
@@ -146,15 +147,39 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 			break // No more matches possible
 		}
 
+		// For market orders, check if buyer can afford at least 1 share at this price
+		if buyOrder.OrderType == types.MarketOrder && remainingBalance < askPrice {
+			break // Buyer can't afford any more shares
+		}
+
 		level := book.SellSide.GetBestLevel()
 		now := time.Now()
 		// Match against orders at this price level
 		for !level.IsEmpty() && remainingQty > 0 {
+			// For market orders, re-check affordability at this price level
+			if buyOrder.OrderType == types.MarketOrder && remainingBalance < askPrice {
+				break
+			}
+
 			sellOrder := level.Front()
 			originalSellQty := sellOrder.Quantity
 
 			// Calculate match quantity
 			matchQty := min(remainingQty, sellOrder.Quantity)
+
+			// For market orders, cap quantity by what the buyer can actually afford
+			if buyOrder.OrderType == types.MarketOrder {
+				affordableQty := remainingBalance / askPrice
+				if affordableQty < matchQty {
+					matchQty = affordableQty
+				}
+				if matchQty == 0 {
+					remainingQty = 0 // Force exit — can't afford any more
+					break
+				}
+			}
+
+			tradeCost := askPrice * matchQty
 
 			// Create match event
 			match := types.MatchedEvent{
@@ -177,12 +202,17 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 					SellerBotID:     sellOrder.BotId,
 					Quantity:        matchQty,
 					PriceCents:      askPrice,
-					TotalValueCents: askPrice * matchQty,
+					TotalValueCents: tradeCost,
 				}, types.TradeExecuted)
 			}
 			// Update quantities
 			remainingQty -= matchQty
 			sellOrder.Quantity -= matchQty
+
+			// Track spend for market orders
+			if buyOrder.OrderType == types.MarketOrder {
+				remainingBalance -= tradeCost
+			}
 
 			// Emit events for the resting sell order
 			if sellOrder.Quantity == 0 {

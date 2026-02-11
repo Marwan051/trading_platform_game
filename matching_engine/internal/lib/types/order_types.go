@@ -25,15 +25,16 @@ const (
 
 // Order - The order itself
 type Order struct {
-	OrderId     string
-	UserId      string
-	BotId       string
-	StockTicker string
-	OrderType   OrderType
-	OrderSide   OrderSide
-	Quantity    int64
-	LimitPrice  int64
-	Timestamp   time.Time
+	OrderId          string
+	UserId           string
+	BotId            string
+	StockTicker      string
+	OrderType        OrderType
+	OrderSide        OrderSide
+	Quantity         int64
+	LimitPrice       int64
+	AvailableBalance int64 // For MARKET BUY: buyer's available cash to cap spend
+	Timestamp        time.Time
 }
 
 // MatchedEvent represents a successful trade between buyer and seller

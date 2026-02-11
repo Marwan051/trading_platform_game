@@ -21,6 +21,20 @@ func newOrder(id, stock string, side types.OrderSide, orderType types.OrderType,
 	}
 }
 
+// Helper to create a market buy order with available balance
+func newMarketBuyOrder(id, stock string, qty, availableBalance int64) *types.Order {
+	return &types.Order{
+		OrderId:          id,
+		StockTicker:      stock,
+		OrderSide:        types.Buy,
+		OrderType:        types.MarketOrder,
+		Quantity:         qty,
+		LimitPrice:       0,
+		AvailableBalance: availableBalance,
+		Timestamp:        time.Now(),
+	}
+}
+
 func TestMatchingEngine(t *testing.T) {
 	t.Run("should initialize correctly", func(t *testing.T) {
 		testStreamingClient := &clients.TestStreamingClient{}
@@ -240,8 +254,8 @@ func TestMatchingEngine(t *testing.T) {
 		engine.SubmitOrder(sell1)
 		engine.SubmitOrder(sell2)
 
-		// Market buy should match all available
-		buyOrder := newOrder("buy1", "AAPL", types.Buy, types.MarketOrder, 100, 0)
+		// Market buy should match all available (has enough balance: 50*15000 + 50*15100 = 1505000)
+		buyOrder := newMarketBuyOrder("buy1", "AAPL", 100, 1_600_000)
 		matches, remaining, _ := engine.SubmitOrder(buyOrder)
 
 		if len(matches) != 2 {
@@ -249,6 +263,38 @@ func TestMatchingEngine(t *testing.T) {
 		}
 		if remaining != 0 {
 			t.Errorf("expected 0 remaining, got %d", remaining)
+		}
+	})
+
+	t.Run("should stop market buy when balance exhausted", func(t *testing.T) {
+		testStreamingClient := &clients.TestStreamingClient{}
+		engine := NewMatchingEngine(testStreamingClient)
+
+		// Add sell orders: 50 @ $150.00 and 50 @ $151.00
+		sell1 := newOrder("sell1", "AAPL", types.Sell, types.LimitOrder, 50, 15000)
+		sell2 := newOrder("sell2", "AAPL", types.Sell, types.LimitOrder, 50, 15100)
+		engine.SubmitOrder(sell1)
+		engine.SubmitOrder(sell2)
+
+		// Buyer wants 100 shares but only has $800,000 (can afford 50@15000 + 3@15100 = 795300)
+		buyOrder := newMarketBuyOrder("buy1", "AAPL", 100, 800_000)
+		matches, remaining, _ := engine.SubmitOrder(buyOrder)
+
+		// Should fill 50 @ 15000 (cost=750000, remaining balance=50000)
+		// Then 3 @ 15100 (cost=45300, remaining balance=4700 < 15100, stop)
+		// Remaining qty = 100 - 50 - 3 = 47, but IOC cancels remainder → remaining = 0
+		if len(matches) != 2 {
+			t.Fatalf("expected 2 matches, got %d", len(matches))
+		}
+		if matches[0].Quantity != 50 {
+			t.Errorf("expected first match qty 50, got %d", matches[0].Quantity)
+		}
+		if matches[1].Quantity != 3 {
+			t.Errorf("expected second match qty 3, got %d", matches[1].Quantity)
+		}
+		// Unfilled portion = 47 (IOC cancellation event is emitted separately)
+		if remaining != 47 {
+			t.Errorf("expected 47 remaining, got %d", remaining)
 		}
 	})
 
