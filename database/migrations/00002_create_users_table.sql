@@ -8,6 +8,8 @@ CREATE TABLE user_profile (
     -- Game display name
     cash_balance_cents BIGINT DEFAULT 1000000 CHECK (cash_balance_cents >= 0),
     -- $100,000.00 in cents
+    cash_hold_cents BIGINT DEFAULT 0 CHECK (cash_hold_cents >= 0),
+    -- Cash locked in pending buy orders
     total_portfolio_value_cents BIGINT DEFAULT 1000000,
     last_active_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW(),

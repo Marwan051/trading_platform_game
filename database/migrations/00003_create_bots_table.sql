@@ -6,6 +6,7 @@ CREATE TABLE bots (
     -- References Better Auth user.id, NULL for system bots
     bot_name TEXT UNIQUE NOT NULL,
     cash_balance_cents BIGINT DEFAULT 10000000 CHECK (cash_balance_cents >= 0),
+    cash_hold_cents BIGINT DEFAULT 0 CHECK (cash_hold_cents >= 0),
     total_portfolio_value_cents BIGINT DEFAULT 10000000,
     is_active BOOLEAN DEFAULT TRUE,
     trading_strategy TEXT DEFAULT 'RANDOM' CHECK (
