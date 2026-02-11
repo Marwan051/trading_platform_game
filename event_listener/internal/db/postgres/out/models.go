@@ -9,7 +9,7 @@ import (
 )
 
 type Bot struct {
-	ID                       pgtype.UUID        `json:"id"`
+	ID                       int64              `json:"id"`
 	OwnerUserID              pgtype.Text        `json:"owner_user_id"`
 	BotName                  string             `json:"bot_name"`
 	CashBalanceCents         pgtype.Int8        `json:"cash_balance_cents"`
@@ -36,7 +36,7 @@ type Leaderboard struct {
 type Order struct {
 	ID                pgtype.UUID        `json:"id"`
 	UserID            pgtype.Text        `json:"user_id"`
-	BotID             pgtype.UUID        `json:"bot_id"`
+	BotID             pgtype.Int8        `json:"bot_id"`
 	StockTicker       string             `json:"stock_ticker"`
 	OrderType         string             `json:"order_type"`
 	Side              string             `json:"side"`
@@ -54,7 +54,7 @@ type Order struct {
 type Position struct {
 	ID               pgtype.UUID        `json:"id"`
 	UserID           pgtype.Text        `json:"user_id"`
-	BotID            pgtype.UUID        `json:"bot_id"`
+	BotID            pgtype.Int8        `json:"bot_id"`
 	StockTicker      string             `json:"stock_ticker"`
 	Quantity         int64              `json:"quantity"`
 	QuantityHold     pgtype.Int8        `json:"quantity_hold"`
@@ -105,9 +105,9 @@ type Trade struct {
 	BuyerOrderID    pgtype.UUID        `json:"buyer_order_id"`
 	SellerOrderID   pgtype.UUID        `json:"seller_order_id"`
 	BuyerUserID     pgtype.Text        `json:"buyer_user_id"`
-	BuyerBotID      pgtype.UUID        `json:"buyer_bot_id"`
+	BuyerBotID      pgtype.Int8        `json:"buyer_bot_id"`
 	SellerUserID    pgtype.Text        `json:"seller_user_id"`
-	SellerBotID     pgtype.UUID        `json:"seller_bot_id"`
+	SellerBotID     pgtype.Int8        `json:"seller_bot_id"`
 	Quantity        int64              `json:"quantity"`
 	PriceCents      int64              `json:"price_cents"`
 	TotalValueCents int64              `json:"total_value_cents"`

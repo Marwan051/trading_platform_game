@@ -244,6 +244,14 @@ seller_bot_add_cash AS (
     FROM trade_info ti
     WHERE bots.id = ti.seller_bot_id
         AND ti.seller_bot_id IS NOT NULL
+),
+-- Update stock price to reflect the latest trade price
+update_stock_price AS (
+    UPDATE stocks
+    SET current_price_cents = ti.price_cents,
+        updated_at = NOW()
+    FROM trade_info ti
+    WHERE stocks.ticker = ti.stock_ticker
 )
 SELECT 1;
 -- name: HandleOrderFilled :exec
@@ -330,12 +338,6 @@ INSERT INTO orders (
         id,
         user_id,
         bot_id,
-        stock_ticker,
-        order_type,
-        side,
-        quantity,
-        remaining_quantity,
-        limit_price_cents,
         status
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, 'REJECTED');
+VALUES ($1, $2, $3, 'REJECTED');

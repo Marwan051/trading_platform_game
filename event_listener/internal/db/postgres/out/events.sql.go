@@ -22,6 +22,7 @@ WITH cancelled_order AS (
     RETURNING id,
         user_id,
         bot_id,
+        order_type,
         side,
         remaining_quantity,
         limit_price_cents,
@@ -35,6 +36,7 @@ return_user_cash AS (
     FROM cancelled_order co
     WHERE user_profile.user_id = co.user_id
         AND co.side = 'BUY'
+        AND co.order_type = 'LIMIT'
         AND co.user_id IS NOT NULL
 ),
 return_bot_cash AS (
@@ -45,6 +47,7 @@ return_bot_cash AS (
     FROM cancelled_order co
     WHERE bots.id = co.bot_id
         AND co.side = 'BUY'
+        AND co.order_type = 'LIMIT'
         AND co.bot_id IS NOT NULL
 ),
 return_user_shares AS (
@@ -72,8 +75,8 @@ return_bot_shares AS (
 SELECT 1
 `
 
-// For BUY orders: release cash hold
-// For SELL orders: release share hold
+// For LIMIT BUY orders: release cash hold
+// For ALL SELL orders: release share hold
 func (q *Queries) HandleOrderCancelled(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, handleOrderCancelled, id)
 	return err
@@ -96,21 +99,20 @@ func (q *Queries) HandleOrderFilled(ctx context.Context, id pgtype.UUID) error {
 
 const handleOrderPartiallyFilled = `-- name: HandleOrderPartiallyFilled :exec
 UPDATE orders
-SET filled_quantity = $2,
-    remaining_quantity = $3,
+SET filled_quantity = filled_quantity + $2,
+    remaining_quantity = remaining_quantity - $2,
     status = 'PARTIAL',
     updated_at = NOW()
 WHERE id = $1
 `
 
 type HandleOrderPartiallyFilledParams struct {
-	ID                pgtype.UUID `json:"id"`
-	FilledQuantity    pgtype.Int8 `json:"filled_quantity"`
-	RemainingQuantity int64       `json:"remaining_quantity"`
+	ID             pgtype.UUID `json:"id"`
+	FilledQuantity pgtype.Int8 `json:"filled_quantity"`
 }
 
 func (q *Queries) HandleOrderPartiallyFilled(ctx context.Context, arg HandleOrderPartiallyFilledParams) error {
-	_, err := q.db.Exec(ctx, handleOrderPartiallyFilled, arg.ID, arg.FilledQuantity, arg.RemainingQuantity)
+	_, err := q.db.Exec(ctx, handleOrderPartiallyFilled, arg.ID, arg.FilledQuantity)
 	return err
 }
 
@@ -132,6 +134,7 @@ WITH inserted_order AS (
     RETURNING id,
         user_id,
         bot_id,
+        order_type,
         side,
         quantity,
         limit_price_cents,
@@ -145,6 +148,7 @@ lock_user_cash AS (
     FROM inserted_order io
     WHERE user_profile.user_id = io.user_id
         AND io.side = 'BUY'
+        AND io.order_type = 'LIMIT'
         AND io.user_id IS NOT NULL
 ),
 lock_bot_cash AS (
@@ -155,6 +159,7 @@ lock_bot_cash AS (
     FROM inserted_order io
     WHERE bots.id = io.bot_id
         AND io.side = 'BUY'
+        AND io.order_type = 'LIMIT'
         AND io.bot_id IS NOT NULL
 ),
 lock_user_shares AS (
@@ -185,7 +190,7 @@ SELECT 1
 type HandleOrderPlacedParams struct {
 	ID              pgtype.UUID `json:"id"`
 	UserID          pgtype.Text `json:"user_id"`
-	BotID           pgtype.UUID `json:"bot_id"`
+	BotID           pgtype.Int8 `json:"bot_id"`
 	StockTicker     string      `json:"stock_ticker"`
 	OrderType       string      `json:"order_type"`
 	Side            string      `json:"side"`
@@ -193,8 +198,8 @@ type HandleOrderPlacedParams struct {
 	LimitPriceCents pgtype.Int8 `json:"limit_price_cents"`
 }
 
-// For BUY orders: lock cash
-// For SELL orders: lock shares (reduce available, increase hold)
+// For LIMIT BUY orders: lock cash (market buys have no hold, deducted on trade)
+// For ALL SELL orders: lock shares (both market and limit)
 func (q *Queries) HandleOrderPlaced(ctx context.Context, arg HandleOrderPlacedParams) error {
 	_, err := q.db.Exec(ctx, handleOrderPlaced,
 		arg.ID,
@@ -214,39 +219,19 @@ INSERT INTO orders (
         id,
         user_id,
         bot_id,
-        stock_ticker,
-        order_type,
-        side,
-        quantity,
-        remaining_quantity,
-        limit_price_cents,
         status
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, 'REJECTED')
+VALUES ($1, $2, $3, 'REJECTED')
 `
 
 type HandleOrderRejectedParams struct {
-	ID              pgtype.UUID `json:"id"`
-	UserID          pgtype.Text `json:"user_id"`
-	BotID           pgtype.UUID `json:"bot_id"`
-	StockTicker     string      `json:"stock_ticker"`
-	OrderType       string      `json:"order_type"`
-	Side            string      `json:"side"`
-	Quantity        int64       `json:"quantity"`
-	LimitPriceCents pgtype.Int8 `json:"limit_price_cents"`
+	ID     pgtype.UUID `json:"id"`
+	UserID pgtype.Text `json:"user_id"`
+	BotID  pgtype.Int8 `json:"bot_id"`
 }
 
 func (q *Queries) HandleOrderRejected(ctx context.Context, arg HandleOrderRejectedParams) error {
-	_, err := q.db.Exec(ctx, handleOrderRejected,
-		arg.ID,
-		arg.UserID,
-		arg.BotID,
-		arg.StockTicker,
-		arg.OrderType,
-		arg.Side,
-		arg.Quantity,
-		arg.LimitPriceCents,
-	)
+	_, err := q.db.Exec(ctx, handleOrderRejected, arg.ID, arg.UserID, arg.BotID)
 	return err
 }
 
@@ -266,7 +251,9 @@ WITH trade_info AS (
             total_value_cents
         )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING buyer_user_id,
+    RETURNING buyer_order_id,
+        seller_order_id,
+        buyer_user_id,
         buyer_bot_id,
         seller_user_id,
         seller_bot_id,
@@ -275,21 +262,58 @@ WITH trade_info AS (
         price_cents,
         total_value_cents
 ),
-release_buyer_user_cash_hold AS (
+buyer_order AS (
+    SELECT o.order_type,
+        o.limit_price_cents
+    FROM orders o,
+        trade_info ti
+    WHERE o.id = ti.buyer_order_id
+),
+release_buyer_user_limit_hold AS (
     UPDATE user_profile
-    SET cash_hold_cents = cash_hold_cents - ti.total_value_cents,
+    SET cash_hold_cents = cash_hold_cents - (ti.quantity * bo.limit_price_cents),
+        cash_balance_cents = cash_balance_cents + (
+            (ti.quantity * bo.limit_price_cents) - ti.total_value_cents
+        ),
         updated_at = NOW()
-    FROM trade_info ti
+    FROM trade_info ti,
+        buyer_order bo
     WHERE user_profile.user_id = ti.buyer_user_id
         AND ti.buyer_user_id IS NOT NULL
+        AND bo.order_type = 'LIMIT'
 ),
-release_buyer_bot_cash_hold AS (
+release_buyer_bot_limit_hold AS (
     UPDATE bots
-    SET cash_hold_cents = cash_hold_cents - ti.total_value_cents,
+    SET cash_hold_cents = cash_hold_cents - (ti.quantity * bo.limit_price_cents),
+        cash_balance_cents = cash_balance_cents + (
+            (ti.quantity * bo.limit_price_cents) - ti.total_value_cents
+        ),
         updated_at = NOW()
-    FROM trade_info ti
+    FROM trade_info ti,
+        buyer_order bo
     WHERE bots.id = ti.buyer_bot_id
         AND ti.buyer_bot_id IS NOT NULL
+        AND bo.order_type = 'LIMIT'
+),
+deduct_buyer_user_market_cash AS (
+    UPDATE user_profile
+    SET cash_balance_cents = cash_balance_cents - ti.total_value_cents,
+        updated_at = NOW()
+    FROM trade_info ti,
+        buyer_order bo
+    WHERE user_profile.user_id = ti.buyer_user_id
+        AND ti.buyer_user_id IS NOT NULL
+        AND bo.order_type = 'MARKET'
+),
+deduct_buyer_bot_market_cash AS (
+    UPDATE bots
+    SET cash_balance_cents = cash_balance_cents - ti.total_value_cents,
+        updated_at = NOW()
+    FROM trade_info ti,
+        buyer_order bo
+    WHERE bots.id = ti.buyer_bot_id
+        AND ti.buyer_bot_id IS NOT NULL
+        AND bo.order_type = 'MARKET'
 ),
 buyer_user_add_position AS (
     INSERT INTO positions (
@@ -381,10 +405,12 @@ seller_bot_add_cash AS (
     WHERE bots.id = ti.seller_bot_id
         AND ti.seller_bot_id IS NOT NULL
 ),
-delete_empty_positions AS (
-    DELETE FROM positions
-    WHERE quantity = 0
-        AND quantity_hold = 0
+update_stock_price AS (
+    UPDATE stocks
+    SET current_price_cents = ti.price_cents,
+        updated_at = NOW()
+    FROM trade_info ti
+    WHERE stocks.ticker = ti.stock_ticker
 )
 SELECT 1
 `
@@ -395,19 +421,21 @@ type HandleTradeExecutedParams struct {
 	BuyerOrderID    pgtype.UUID `json:"buyer_order_id"`
 	SellerOrderID   pgtype.UUID `json:"seller_order_id"`
 	BuyerUserID     pgtype.Text `json:"buyer_user_id"`
-	BuyerBotID      pgtype.UUID `json:"buyer_bot_id"`
+	BuyerBotID      pgtype.Int8 `json:"buyer_bot_id"`
 	SellerUserID    pgtype.Text `json:"seller_user_id"`
-	SellerBotID     pgtype.UUID `json:"seller_bot_id"`
+	SellerBotID     pgtype.Int8 `json:"seller_bot_id"`
 	Quantity        int64       `json:"quantity"`
 	PriceCents      int64       `json:"price_cents"`
 	TotalValueCents int64       `json:"total_value_cents"`
 }
 
-// BUYER: Release cash from hold (it's being spent now)
+// Look up buyer order type to know if cash is in hold or needs direct deduction
+// LIMIT BUY: release hold at limit price, refund price improvement to balance
+// MARKET BUY: deduct cash directly from balance (no hold exists)
 // BUYER: Add shares to position
 // SELLER: Release quantity_hold (shares were already in hold, now they're gone)
 // SELLER: Add cash from sale
-// Cleanup: Delete empty positions
+// Update stock price to reflect the latest trade price
 func (q *Queries) HandleTradeExecuted(ctx context.Context, arg HandleTradeExecutedParams) error {
 	_, err := q.db.Exec(ctx, handleTradeExecuted,
 		arg.ID,

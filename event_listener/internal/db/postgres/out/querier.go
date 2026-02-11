@@ -11,20 +11,22 @@ import (
 )
 
 type Querier interface {
-	// For BUY orders: release cash hold
-	// For SELL orders: release share hold
+	// For LIMIT BUY orders: release cash hold
+	// For ALL SELL orders: release share hold
 	HandleOrderCancelled(ctx context.Context, id pgtype.UUID) error
 	HandleOrderFilled(ctx context.Context, id pgtype.UUID) error
 	HandleOrderPartiallyFilled(ctx context.Context, arg HandleOrderPartiallyFilledParams) error
-	// For BUY orders: lock cash
-	// For SELL orders: lock shares (reduce available, increase hold)
+	// For LIMIT BUY orders: lock cash (market buys have no hold, deducted on trade)
+	// For ALL SELL orders: lock shares (both market and limit)
 	HandleOrderPlaced(ctx context.Context, arg HandleOrderPlacedParams) error
 	HandleOrderRejected(ctx context.Context, arg HandleOrderRejectedParams) error
-	// BUYER: Release cash from hold (it's being spent now)
+	// Look up buyer order type to know if cash is in hold or needs direct deduction
+	// LIMIT BUY: release hold at limit price, refund price improvement to balance
+	// MARKET BUY: deduct cash directly from balance (no hold exists)
 	// BUYER: Add shares to position
 	// SELLER: Release quantity_hold (shares were already in hold, now they're gone)
 	// SELLER: Add cash from sale
-	// Cleanup: Delete empty positions
+	// Update stock price to reflect the latest trade price
 	HandleTradeExecuted(ctx context.Context, arg HandleTradeExecutedParams) error
 }
 

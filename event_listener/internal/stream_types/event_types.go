@@ -14,7 +14,6 @@ const (
 	OrderPartiallyFilled
 	OrderRejected
 	TradeExecuted
-	PriceChanged
 )
 
 type Event struct {
@@ -27,7 +26,7 @@ type Event struct {
 type OrderPlacedEvent struct {
 	OrderID         string    `json:"order_id"`
 	UserID          string    `json:"user_id"`
-	BotID           string    `json:"bot_id"`
+	BotID           int64     `json:"bot_id"`
 	StockTicker     string    `json:"stock_ticker"`
 	OrderType       OrderType `json:"order_type"`
 	OrderSide       OrderSide `json:"order_side"`
@@ -38,14 +37,14 @@ type OrderPlacedEvent struct {
 type OrderCancelledEvent struct {
 	OrderID           string `json:"order_id"`
 	UserID            string `json:"user_id"`
-	BotID             string `json:"bot_id"`
+	BotID             int64  `json:"bot_id"`
 	RemainingQuantity int64  `json:"remaining_quantity"`
 }
 
 type OrderFilledEvent struct {
 	OrderID        string `json:"order_id"`
 	UserID         string `json:"user_id"`
-	BotID          string `json:"bot_id"`
+	BotID          int64  `json:"bot_id"`
 	Quantity       int64  `json:"total_quantity"`
 	FillPriceCents int64  `json:"fill_price_cents"`
 }
@@ -53,7 +52,7 @@ type OrderFilledEvent struct {
 type OrderPartiallyFilledEvent struct {
 	OrderID           string `json:"order_id"`
 	UserID            string `json:"user_id"`
-	BotID             string `json:"bot_id"`
+	BotID             int64  `json:"bot_id"`
 	FilledQuantity    int64  `json:"filled_quantity"`
 	RemainingQuantity int64  `json:"remaining_quantity"`
 	FillPriceCents    int64  `json:"fill_price_cents"`
@@ -62,7 +61,7 @@ type OrderPartiallyFilledEvent struct {
 type OrderRejectedEvent struct {
 	OrderID      string `json:"order_id"`
 	UserID       string `json:"user_id"`
-	BotID        string `json:"bot_id"`
+	BotID        int64  `json:"bot_id"`
 	Reason       string `json:"reason"`
 	ErrorMessage string `json:"error_message"`
 }
@@ -73,19 +72,12 @@ type TradeExecutedEvent struct {
 	BuyerOrderID    string `json:"buyer_order_id"`
 	SellerOrderID   string `json:"seller_order_id"`
 	BuyerUserID     string `json:"buyer_user_id"`
-	BuyerBotID      string `json:"buyer_bot_id"`
+	BuyerBotID      int64  `json:"buyer_bot_id"`
 	SellerUserID    string `json:"seller_user_id"`
-	SellerBotID     string `json:"seller_bot_id"`
+	SellerBotID     int64  `json:"seller_bot_id"`
 	Quantity        int64  `json:"quantity"`
 	PriceCents      int64  `json:"price_cents"`
 	TotalValueCents int64  `json:"total_value_cents"`
-}
-
-type PriceChangedEvent struct {
-	StockTicker     string `json:"stock_ticker"`
-	OldPriceCents   int64  `json:"old_price_cents"`
-	NewPriceCents   int64  `json:"new_price_cents"`
-	CausedByTradeID string `json:"caused_by_trade_id"`
 }
 
 // EventPayload is a marker interface that all event payload types implement
@@ -100,4 +92,3 @@ func (*OrderFilledEvent) eventPayload()          {}
 func (*OrderPartiallyFilledEvent) eventPayload() {}
 func (*OrderRejectedEvent) eventPayload()        {}
 func (*TradeExecutedEvent) eventPayload()        {}
-func (*PriceChangedEvent) eventPayload()         {}
