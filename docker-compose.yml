@@ -5,7 +5,7 @@ services:
   #   context: ./database
   #   dockerfile: Dockerfile
   db:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:2.25.0-pg18
     container_name: trading_db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -39,7 +39,7 @@ services:
     command: ["up"]
 
   valkey:
-    image: valkey/valkey:latest
+    image: valkey/valkey:9.0.2-alpine
     container_name: trading_valkey
     ports:
       - "6379:6379"
