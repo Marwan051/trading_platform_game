@@ -12,6 +12,7 @@ type Config struct {
 	ValkeyHost       string
 	ValkeyPort       int
 	ValkeyStreamName string
+	DatabaseURL      string
 }
 
 func Load() *Config {
@@ -21,6 +22,7 @@ func Load() *Config {
 		ValkeyHost:       getEnv("VALKEY_HOST", "localhost"),
 		ValkeyPort:       getIntEnv("VALKEY_PORT", 6379),
 		ValkeyStreamName: getEnv("VALKEY_STREAM_NAME", "matching_engine_stream"),
+		DatabaseURL:      getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/trading_platform?sslmode=disable"),
 	}
 }
 
