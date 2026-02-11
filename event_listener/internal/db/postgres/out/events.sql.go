@@ -30,8 +30,8 @@ WITH cancelled_order AS (
 ),
 return_user_cash AS (
     UPDATE user_profile
-    SET cash_balance_cents = cash_balance_cents + (co.remaining_quantity * co.limit_price_cents),
-        cash_hold_cents = cash_hold_cents - (co.remaining_quantity * co.limit_price_cents),
+    SET cash_balance_cents = user_profile.cash_balance_cents + (co.remaining_quantity * co.limit_price_cents),
+        cash_hold_cents = user_profile.cash_hold_cents - (co.remaining_quantity * co.limit_price_cents),
         updated_at = NOW()
     FROM cancelled_order co
     WHERE user_profile.user_id = co.user_id
@@ -41,8 +41,8 @@ return_user_cash AS (
 ),
 return_bot_cash AS (
     UPDATE bots
-    SET cash_balance_cents = cash_balance_cents + (co.remaining_quantity * co.limit_price_cents),
-        cash_hold_cents = cash_hold_cents - (co.remaining_quantity * co.limit_price_cents),
+    SET cash_balance_cents = bots.cash_balance_cents + (co.remaining_quantity * co.limit_price_cents),
+        cash_hold_cents = bots.cash_hold_cents - (co.remaining_quantity * co.limit_price_cents),
         updated_at = NOW()
     FROM cancelled_order co
     WHERE bots.id = co.bot_id
@@ -52,8 +52,8 @@ return_bot_cash AS (
 ),
 return_user_shares AS (
     UPDATE positions
-    SET quantity = quantity + co.remaining_quantity,
-        quantity_hold = quantity_hold - co.remaining_quantity,
+    SET quantity = positions.quantity + co.remaining_quantity,
+        quantity_hold = positions.quantity_hold - co.remaining_quantity,
         updated_at = NOW()
     FROM cancelled_order co
     WHERE positions.user_id = co.user_id
@@ -63,8 +63,8 @@ return_user_shares AS (
 ),
 return_bot_shares AS (
     UPDATE positions
-    SET quantity = quantity + co.remaining_quantity,
-        quantity_hold = quantity_hold - co.remaining_quantity,
+    SET quantity = positions.quantity + co.remaining_quantity,
+        quantity_hold = positions.quantity_hold - co.remaining_quantity,
         updated_at = NOW()
     FROM cancelled_order co
     WHERE positions.bot_id = co.bot_id
@@ -85,11 +85,11 @@ func (q *Queries) HandleOrderCancelled(ctx context.Context, id pgtype.UUID) erro
 const handleOrderFilled = `-- name: HandleOrderFilled :exec
 UPDATE orders
 SET status = 'FILLED',
-    filled_quantity = quantity,
+    filled_quantity = orders.quantity,
     remaining_quantity = 0,
     filled_at = NOW(),
     updated_at = NOW()
-WHERE id = $1
+WHERE orders.id = $1
 `
 
 func (q *Queries) HandleOrderFilled(ctx context.Context, id pgtype.UUID) error {
@@ -99,11 +99,11 @@ func (q *Queries) HandleOrderFilled(ctx context.Context, id pgtype.UUID) error {
 
 const handleOrderPartiallyFilled = `-- name: HandleOrderPartiallyFilled :exec
 UPDATE orders
-SET filled_quantity = filled_quantity + $2,
-    remaining_quantity = remaining_quantity - $2,
+SET filled_quantity = orders.filled_quantity + $2,
+    remaining_quantity = orders.remaining_quantity - $2,
     status = 'PARTIAL',
     updated_at = NOW()
-WHERE id = $1
+WHERE orders.id = $1
 `
 
 type HandleOrderPartiallyFilledParams struct {
@@ -142,8 +142,8 @@ WITH inserted_order AS (
 ),
 lock_user_cash AS (
     UPDATE user_profile
-    SET cash_balance_cents = cash_balance_cents - (io.quantity * io.limit_price_cents),
-        cash_hold_cents = cash_hold_cents + (io.quantity * io.limit_price_cents),
+    SET cash_balance_cents = user_profile.cash_balance_cents - (io.quantity * io.limit_price_cents),
+        cash_hold_cents = user_profile.cash_hold_cents + (io.quantity * io.limit_price_cents),
         updated_at = NOW()
     FROM inserted_order io
     WHERE user_profile.user_id = io.user_id
@@ -153,8 +153,8 @@ lock_user_cash AS (
 ),
 lock_bot_cash AS (
     UPDATE bots
-    SET cash_balance_cents = cash_balance_cents - (io.quantity * io.limit_price_cents),
-        cash_hold_cents = cash_hold_cents + (io.quantity * io.limit_price_cents),
+    SET cash_balance_cents = bots.cash_balance_cents - (io.quantity * io.limit_price_cents),
+        cash_hold_cents = bots.cash_hold_cents + (io.quantity * io.limit_price_cents),
         updated_at = NOW()
     FROM inserted_order io
     WHERE bots.id = io.bot_id
@@ -164,8 +164,8 @@ lock_bot_cash AS (
 ),
 lock_user_shares AS (
     UPDATE positions
-    SET quantity = quantity - io.quantity,
-        quantity_hold = quantity_hold + io.quantity,
+    SET quantity = positions.quantity - io.quantity,
+        quantity_hold = positions.quantity_hold + io.quantity,
         updated_at = NOW()
     FROM inserted_order io
     WHERE positions.user_id = io.user_id
@@ -175,8 +175,8 @@ lock_user_shares AS (
 ),
 lock_bot_shares AS (
     UPDATE positions
-    SET quantity = quantity - io.quantity,
-        quantity_hold = quantity_hold + io.quantity,
+    SET quantity = positions.quantity - io.quantity,
+        quantity_hold = positions.quantity_hold + io.quantity,
         updated_at = NOW()
     FROM inserted_order io
     WHERE positions.bot_id = io.bot_id
@@ -265,52 +265,51 @@ WITH trade_info AS (
 buyer_order AS (
     SELECT o.order_type,
         o.limit_price_cents
-    FROM orders o,
-        trade_info ti
-    WHERE o.id = ti.buyer_order_id
+    FROM orders o
+        INNER JOIN trade_info ti ON o.id = ti.buyer_order_id
 ),
 release_buyer_user_limit_hold AS (
     UPDATE user_profile
-    SET cash_hold_cents = cash_hold_cents - (ti.quantity * bo.limit_price_cents),
-        cash_balance_cents = cash_balance_cents + (
+    SET cash_hold_cents = user_profile.cash_hold_cents - (ti.quantity * bo.limit_price_cents),
+        cash_balance_cents = user_profile.cash_balance_cents + (
             (ti.quantity * bo.limit_price_cents) - ti.total_value_cents
         ),
         updated_at = NOW()
-    FROM trade_info ti,
-        buyer_order bo
+    FROM trade_info ti
+        CROSS JOIN buyer_order bo
     WHERE user_profile.user_id = ti.buyer_user_id
         AND ti.buyer_user_id IS NOT NULL
         AND bo.order_type = 'LIMIT'
 ),
 release_buyer_bot_limit_hold AS (
     UPDATE bots
-    SET cash_hold_cents = cash_hold_cents - (ti.quantity * bo.limit_price_cents),
-        cash_balance_cents = cash_balance_cents + (
+    SET cash_hold_cents = bots.cash_hold_cents - (ti.quantity * bo.limit_price_cents),
+        cash_balance_cents = bots.cash_balance_cents + (
             (ti.quantity * bo.limit_price_cents) - ti.total_value_cents
         ),
         updated_at = NOW()
-    FROM trade_info ti,
-        buyer_order bo
+    FROM trade_info ti
+        CROSS JOIN buyer_order bo
     WHERE bots.id = ti.buyer_bot_id
         AND ti.buyer_bot_id IS NOT NULL
         AND bo.order_type = 'LIMIT'
 ),
 deduct_buyer_user_market_cash AS (
     UPDATE user_profile
-    SET cash_balance_cents = cash_balance_cents - ti.total_value_cents,
+    SET cash_balance_cents = user_profile.cash_balance_cents - ti.total_value_cents,
         updated_at = NOW()
-    FROM trade_info ti,
-        buyer_order bo
+    FROM trade_info ti
+        CROSS JOIN buyer_order bo
     WHERE user_profile.user_id = ti.buyer_user_id
         AND ti.buyer_user_id IS NOT NULL
         AND bo.order_type = 'MARKET'
 ),
 deduct_buyer_bot_market_cash AS (
     UPDATE bots
-    SET cash_balance_cents = cash_balance_cents - ti.total_value_cents,
+    SET cash_balance_cents = bots.cash_balance_cents - ti.total_value_cents,
         updated_at = NOW()
-    FROM trade_info ti,
-        buyer_order bo
+    FROM trade_info ti
+        CROSS JOIN buyer_order bo
     WHERE bots.id = ti.buyer_bot_id
         AND ti.buyer_bot_id IS NOT NULL
         AND bo.order_type = 'MARKET'
@@ -365,10 +364,10 @@ buyer_bot_add_position AS (
 ),
 seller_user_release_hold AS (
     UPDATE positions
-    SET quantity_hold = quantity_hold - ti.quantity,
+    SET quantity_hold = positions.quantity_hold - ti.quantity,
         total_cost_cents = GREATEST(
             0,
-            total_cost_cents - (ti.quantity * average_cost_cents)
+            positions.total_cost_cents - (ti.quantity * positions.average_cost_cents)
         ),
         updated_at = NOW()
     FROM trade_info ti
@@ -378,10 +377,10 @@ seller_user_release_hold AS (
 ),
 seller_bot_release_hold AS (
     UPDATE positions
-    SET quantity_hold = quantity_hold - ti.quantity,
+    SET quantity_hold = positions.quantity_hold - ti.quantity,
         total_cost_cents = GREATEST(
             0,
-            total_cost_cents - (ti.quantity * average_cost_cents)
+            positions.total_cost_cents - (ti.quantity * positions.average_cost_cents)
         ),
         updated_at = NOW()
     FROM trade_info ti
@@ -391,7 +390,7 @@ seller_bot_release_hold AS (
 ),
 seller_user_add_cash AS (
     UPDATE user_profile
-    SET cash_balance_cents = cash_balance_cents + ti.total_value_cents,
+    SET cash_balance_cents = user_profile.cash_balance_cents + ti.total_value_cents,
         updated_at = NOW()
     FROM trade_info ti
     WHERE user_profile.user_id = ti.seller_user_id
@@ -399,7 +398,7 @@ seller_user_add_cash AS (
 ),
 seller_bot_add_cash AS (
     UPDATE bots
-    SET cash_balance_cents = cash_balance_cents + ti.total_value_cents,
+    SET cash_balance_cents = bots.cash_balance_cents + ti.total_value_cents,
         updated_at = NOW()
     FROM trade_info ti
     WHERE bots.id = ti.seller_bot_id
