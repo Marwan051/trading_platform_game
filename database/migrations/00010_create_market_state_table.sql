@@ -1,3 +1,0 @@
--- +goose Up
--- Removed: market_stats can be computed on-the-fly from trades/users
--- +goose Down

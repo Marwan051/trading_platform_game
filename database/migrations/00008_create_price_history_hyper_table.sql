@@ -1,3 +1,0 @@
--- +goose Up
--- Removed: price_history is redundant with continuous aggregates on trades
--- +goose Down

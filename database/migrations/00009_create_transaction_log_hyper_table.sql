@@ -1,3 +1,0 @@
--- +goose Up
--- Removed: transaction_log is unused
--- +goose Down
