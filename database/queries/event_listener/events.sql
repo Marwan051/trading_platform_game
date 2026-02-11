@@ -16,12 +16,13 @@ WITH inserted_order AS (
     RETURNING id,
         user_id,
         bot_id,
+        order_type,
         side,
         quantity,
         limit_price_cents,
         stock_ticker
 ),
--- For BUY orders: lock cash
+-- For LIMIT BUY orders: lock cash (market buys have no hold, deducted on trade)
 lock_user_cash AS (
     UPDATE user_profile
     SET cash_balance_cents = cash_balance_cents - (io.quantity * io.limit_price_cents),
@@ -30,6 +31,7 @@ lock_user_cash AS (
     FROM inserted_order io
     WHERE user_profile.user_id = io.user_id
         AND io.side = 'BUY'
+        AND io.order_type = 'LIMIT'
         AND io.user_id IS NOT NULL
 ),
 lock_bot_cash AS (
@@ -40,9 +42,10 @@ lock_bot_cash AS (
     FROM inserted_order io
     WHERE bots.id = io.bot_id
         AND io.side = 'BUY'
+        AND io.order_type = 'LIMIT'
         AND io.bot_id IS NOT NULL
 ),
--- For SELL orders: lock shares (reduce available, increase hold)
+-- For ALL SELL orders: lock shares (both market and limit)
 lock_user_shares AS (
     UPDATE positions
     SET quantity = quantity - io.quantity,
@@ -82,7 +85,9 @@ WITH trade_info AS (
             total_value_cents
         )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING buyer_user_id,
+    RETURNING buyer_order_id,
+        seller_order_id,
+        buyer_user_id,
         buyer_bot_id,
         seller_user_id,
         seller_bot_id,
@@ -91,22 +96,61 @@ WITH trade_info AS (
         price_cents,
         total_value_cents
 ),
--- BUYER: Release cash from hold (it's being spent now)
-release_buyer_user_cash_hold AS (
+-- Look up buyer order type to know if cash is in hold or needs direct deduction
+buyer_order AS (
+    SELECT o.order_type,
+        o.limit_price_cents
+    FROM orders o,
+        trade_info ti
+    WHERE o.id = ti.buyer_order_id
+),
+-- LIMIT BUY: release hold at limit price, refund price improvement to balance
+release_buyer_user_limit_hold AS (
     UPDATE user_profile
-    SET cash_hold_cents = cash_hold_cents - ti.total_value_cents,
+    SET cash_hold_cents = cash_hold_cents - (ti.quantity * bo.limit_price_cents),
+        cash_balance_cents = cash_balance_cents + (
+            (ti.quantity * bo.limit_price_cents) - ti.total_value_cents
+        ),
         updated_at = NOW()
-    FROM trade_info ti
+    FROM trade_info ti,
+        buyer_order bo
     WHERE user_profile.user_id = ti.buyer_user_id
         AND ti.buyer_user_id IS NOT NULL
+        AND bo.order_type = 'LIMIT'
 ),
-release_buyer_bot_cash_hold AS (
+release_buyer_bot_limit_hold AS (
     UPDATE bots
-    SET cash_hold_cents = cash_hold_cents - ti.total_value_cents,
+    SET cash_hold_cents = cash_hold_cents - (ti.quantity * bo.limit_price_cents),
+        cash_balance_cents = cash_balance_cents + (
+            (ti.quantity * bo.limit_price_cents) - ti.total_value_cents
+        ),
         updated_at = NOW()
-    FROM trade_info ti
+    FROM trade_info ti,
+        buyer_order bo
     WHERE bots.id = ti.buyer_bot_id
         AND ti.buyer_bot_id IS NOT NULL
+        AND bo.order_type = 'LIMIT'
+),
+-- MARKET BUY: deduct cash directly from balance (no hold exists)
+deduct_buyer_user_market_cash AS (
+    UPDATE user_profile
+    SET cash_balance_cents = cash_balance_cents - ti.total_value_cents,
+        updated_at = NOW()
+    FROM trade_info ti,
+        buyer_order bo
+    WHERE user_profile.user_id = ti.buyer_user_id
+        AND ti.buyer_user_id IS NOT NULL
+        AND bo.order_type = 'MARKET'
+),
+deduct_buyer_bot_market_cash AS (
+    UPDATE bots
+    SET cash_balance_cents = cash_balance_cents - ti.total_value_cents,
+        updated_at = NOW()
+    FROM trade_info ti,
+        buyer_order bo
+    WHERE bots.id = ti.buyer_bot_id
+        AND ti.buyer_bot_id IS NOT NULL
+        AND bo.order_type = 'MARKET'
 ),
 -- BUYER: Add shares to position
 buyer_user_add_position AS (
@@ -200,12 +244,6 @@ seller_bot_add_cash AS (
     FROM trade_info ti
     WHERE bots.id = ti.seller_bot_id
         AND ti.seller_bot_id IS NOT NULL
-),
--- Cleanup: Delete empty positions
-delete_empty_positions AS (
-    DELETE FROM positions
-    WHERE quantity = 0
-        AND quantity_hold = 0
 )
 SELECT 1;
 -- name: HandleOrderFilled :exec
@@ -218,8 +256,8 @@ SET status = 'FILLED',
 WHERE id = $1;
 -- name: HandleOrderPartiallyFilled :exec
 UPDATE orders
-SET filled_quantity = $2,
-    remaining_quantity = $3,
+SET filled_quantity = filled_quantity + $2,
+    remaining_quantity = remaining_quantity - $2,
     status = 'PARTIAL',
     updated_at = NOW()
 WHERE id = $1;
@@ -234,12 +272,13 @@ WITH cancelled_order AS (
     RETURNING id,
         user_id,
         bot_id,
+        order_type,
         side,
         remaining_quantity,
         limit_price_cents,
         stock_ticker
 ),
--- For BUY orders: release cash hold
+-- For LIMIT BUY orders: release cash hold
 return_user_cash AS (
     UPDATE user_profile
     SET cash_balance_cents = cash_balance_cents + (co.remaining_quantity * co.limit_price_cents),
@@ -248,6 +287,7 @@ return_user_cash AS (
     FROM cancelled_order co
     WHERE user_profile.user_id = co.user_id
         AND co.side = 'BUY'
+        AND co.order_type = 'LIMIT'
         AND co.user_id IS NOT NULL
 ),
 return_bot_cash AS (
@@ -258,9 +298,10 @@ return_bot_cash AS (
     FROM cancelled_order co
     WHERE bots.id = co.bot_id
         AND co.side = 'BUY'
+        AND co.order_type = 'LIMIT'
         AND co.bot_id IS NOT NULL
 ),
--- For SELL orders: release share hold
+-- For ALL SELL orders: release share hold
 return_user_shares AS (
     UPDATE positions
     SET quantity = quantity + co.remaining_quantity,
