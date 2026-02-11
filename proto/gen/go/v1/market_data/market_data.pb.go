@@ -946,12 +946,11 @@ func (x *StreamPricesRequest) GetStockTickers() []string {
 type PriceUpdate struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	StockTicker              string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
-	Ticker                   string                 `protobuf:"bytes,2,opt,name=ticker,proto3" json:"ticker,omitempty"`
-	NewPriceCents            int64                  `protobuf:"varint,3,opt,name=new_price_cents,json=newPriceCents,proto3" json:"new_price_cents,omitempty"`
-	ChangeCents              int64                  `protobuf:"varint,4,opt,name=change_cents,json=changeCents,proto3" json:"change_cents,omitempty"`
-	ChangePercentBasisPoints int32                  `protobuf:"varint,5,opt,name=change_percent_basis_points,json=changePercentBasisPoints,proto3" json:"change_percent_basis_points,omitempty"`
-	TimestampMs              int64                  `protobuf:"varint,6,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
-	CausedByTradeId          string                 `protobuf:"bytes,7,opt,name=caused_by_trade_id,json=causedByTradeId,proto3" json:"caused_by_trade_id,omitempty"`
+	NewPriceCents            int64                  `protobuf:"varint,2,opt,name=new_price_cents,json=newPriceCents,proto3" json:"new_price_cents,omitempty"`
+	ChangeCents              int64                  `protobuf:"varint,3,opt,name=change_cents,json=changeCents,proto3" json:"change_cents,omitempty"`
+	ChangePercentBasisPoints int32                  `protobuf:"varint,4,opt,name=change_percent_basis_points,json=changePercentBasisPoints,proto3" json:"change_percent_basis_points,omitempty"`
+	TimestampMs              int64                  `protobuf:"varint,5,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
+	CausedByTradeId          string                 `protobuf:"bytes,6,opt,name=caused_by_trade_id,json=causedByTradeId,proto3" json:"caused_by_trade_id,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -989,13 +988,6 @@ func (*PriceUpdate) Descriptor() ([]byte, []int) {
 func (x *PriceUpdate) GetStockTicker() string {
 	if x != nil {
 		return x.StockTicker
-	}
-	return ""
-}
-
-func (x *PriceUpdate) GetTicker() string {
-	if x != nil {
-		return x.Ticker
 	}
 	return ""
 }
@@ -1490,11 +1482,10 @@ func (x *MarketStats) GetTimestampMs() int64 {
 type StockStats struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	StockTicker       string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
-	Ticker            string                 `protobuf:"bytes,2,opt,name=ticker,proto3" json:"ticker,omitempty"`
-	TradesToday       int64                  `protobuf:"varint,3,opt,name=trades_today,json=tradesToday,proto3" json:"trades_today,omitempty"`
-	VolumeToday       int64                  `protobuf:"varint,4,opt,name=volume_today,json=volumeToday,proto3" json:"volume_today,omitempty"`
-	ActiveOrders      int32                  `protobuf:"varint,5,opt,name=active_orders,json=activeOrders,proto3" json:"active_orders,omitempty"`
-	CurrentPriceCents int64                  `protobuf:"varint,6,opt,name=current_price_cents,json=currentPriceCents,proto3" json:"current_price_cents,omitempty"`
+	TradesToday       int64                  `protobuf:"varint,2,opt,name=trades_today,json=tradesToday,proto3" json:"trades_today,omitempty"`
+	VolumeToday       int64                  `protobuf:"varint,3,opt,name=volume_today,json=volumeToday,proto3" json:"volume_today,omitempty"`
+	ActiveOrders      int32                  `protobuf:"varint,4,opt,name=active_orders,json=activeOrders,proto3" json:"active_orders,omitempty"`
+	CurrentPriceCents int64                  `protobuf:"varint,5,opt,name=current_price_cents,json=currentPriceCents,proto3" json:"current_price_cents,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1532,13 +1523,6 @@ func (*StockStats) Descriptor() ([]byte, []int) {
 func (x *StockStats) GetStockTicker() string {
 	if x != nil {
 		return x.StockTicker
-	}
-	return ""
-}
-
-func (x *StockStats) GetTicker() string {
-	if x != nil {
-		return x.Ticker
 	}
 	return ""
 }
@@ -1642,15 +1626,14 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"\x16GetStockPricesResponse\x120\n" +
 	"\x06prices\x18\x01 \x03(\v2\x18.common.types.StockPriceR\x06prices\":\n" +
 	"\x13StreamPricesRequest\x12#\n" +
-	"\rstock_tickers\x18\x01 \x03(\tR\fstockTickers\"\xa2\x02\n" +
+	"\rstock_tickers\x18\x01 \x03(\tR\fstockTickers\"\x8a\x02\n" +
 	"\vPriceUpdate\x12!\n" +
-	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12\x16\n" +
-	"\x06ticker\x18\x02 \x01(\tR\x06ticker\x12&\n" +
-	"\x0fnew_price_cents\x18\x03 \x01(\x03R\rnewPriceCents\x12!\n" +
-	"\fchange_cents\x18\x04 \x01(\x03R\vchangeCents\x12=\n" +
-	"\x1bchange_percent_basis_points\x18\x05 \x01(\x05R\x18changePercentBasisPoints\x12!\n" +
-	"\ftimestamp_ms\x18\x06 \x01(\x03R\vtimestampMs\x12+\n" +
-	"\x12caused_by_trade_id\x18\a \x01(\tR\x0fcausedByTradeId\",\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12&\n" +
+	"\x0fnew_price_cents\x18\x02 \x01(\x03R\rnewPriceCents\x12!\n" +
+	"\fchange_cents\x18\x03 \x01(\x03R\vchangeCents\x12=\n" +
+	"\x1bchange_percent_basis_points\x18\x04 \x01(\x05R\x18changePercentBasisPoints\x12!\n" +
+	"\ftimestamp_ms\x18\x05 \x01(\x03R\vtimestampMs\x12+\n" +
+	"\x12caused_by_trade_id\x18\x06 \x01(\tR\x0fcausedByTradeId\",\n" +
 	"\x0fGetOrderRequest\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\"\xd7\x01\n" +
 	"\x14GetUserOrdersRequest\x12\x17\n" +
@@ -1685,15 +1668,14 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"\x13active_orders_count\x18\x03 \x01(\x05R\x11activeOrdersCount\x12@\n" +
 	"\vstock_stats\x18\x04 \x03(\v2\x1f.trading.market_data.StockStatsR\n" +
 	"stockStats\x12!\n" +
-	"\ftimestamp_ms\x18\x05 \x01(\x03R\vtimestampMs\"\xe2\x01\n" +
+	"\ftimestamp_ms\x18\x05 \x01(\x03R\vtimestampMs\"\xca\x01\n" +
 	"\n" +
 	"StockStats\x12!\n" +
-	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12\x16\n" +
-	"\x06ticker\x18\x02 \x01(\tR\x06ticker\x12!\n" +
-	"\ftrades_today\x18\x03 \x01(\x03R\vtradesToday\x12!\n" +
-	"\fvolume_today\x18\x04 \x01(\x03R\vvolumeToday\x12#\n" +
-	"\ractive_orders\x18\x05 \x01(\x05R\factiveOrders\x12.\n" +
-	"\x13current_price_cents\x18\x06 \x01(\x03R\x11currentPriceCents*>\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12!\n" +
+	"\ftrades_today\x18\x02 \x01(\x03R\vtradesToday\x12!\n" +
+	"\fvolume_today\x18\x03 \x01(\x03R\vvolumeToday\x12#\n" +
+	"\ractive_orders\x18\x04 \x01(\x05R\factiveOrders\x12.\n" +
+	"\x13current_price_cents\x18\x05 \x01(\x03R\x11currentPriceCents*>\n" +
 	"\tDeltaType\x12\r\n" +
 	"\tDELTA_ADD\x10\x00\x12\x10\n" +
 	"\fDELTA_UPDATE\x10\x01\x12\x10\n" +

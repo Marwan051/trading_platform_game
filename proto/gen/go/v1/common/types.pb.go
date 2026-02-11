@@ -543,15 +543,14 @@ func (x *Trade) GetExecutedAtMs() int64 {
 type StockPrice struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	StockTicker              string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
-	Ticker                   string                 `protobuf:"bytes,2,opt,name=ticker,proto3" json:"ticker,omitempty"`
-	CurrentPriceCents        int64                  `protobuf:"varint,3,opt,name=current_price_cents,json=currentPriceCents,proto3" json:"current_price_cents,omitempty"`
-	PreviousCloseCents       int64                  `protobuf:"varint,4,opt,name=previous_close_cents,json=previousCloseCents,proto3" json:"previous_close_cents,omitempty"`
-	ChangeCents              int64                  `protobuf:"varint,5,opt,name=change_cents,json=changeCents,proto3" json:"change_cents,omitempty"`
-	ChangePercentBasisPoints int32                  `protobuf:"varint,6,opt,name=change_percent_basis_points,json=changePercentBasisPoints,proto3" json:"change_percent_basis_points,omitempty"`
-	DayHighCents             int64                  `protobuf:"varint,7,opt,name=day_high_cents,json=dayHighCents,proto3" json:"day_high_cents,omitempty"`
-	DayLowCents              int64                  `protobuf:"varint,8,opt,name=day_low_cents,json=dayLowCents,proto3" json:"day_low_cents,omitempty"`
-	DayVolume                int64                  `protobuf:"varint,9,opt,name=day_volume,json=dayVolume,proto3" json:"day_volume,omitempty"`
-	TimestampMs              int64                  `protobuf:"varint,10,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
+	CurrentPriceCents        int64                  `protobuf:"varint,2,opt,name=current_price_cents,json=currentPriceCents,proto3" json:"current_price_cents,omitempty"`
+	PreviousCloseCents       int64                  `protobuf:"varint,3,opt,name=previous_close_cents,json=previousCloseCents,proto3" json:"previous_close_cents,omitempty"`
+	ChangeCents              int64                  `protobuf:"varint,4,opt,name=change_cents,json=changeCents,proto3" json:"change_cents,omitempty"`
+	ChangePercentBasisPoints int32                  `protobuf:"varint,5,opt,name=change_percent_basis_points,json=changePercentBasisPoints,proto3" json:"change_percent_basis_points,omitempty"`
+	DayHighCents             int64                  `protobuf:"varint,6,opt,name=day_high_cents,json=dayHighCents,proto3" json:"day_high_cents,omitempty"`
+	DayLowCents              int64                  `protobuf:"varint,7,opt,name=day_low_cents,json=dayLowCents,proto3" json:"day_low_cents,omitempty"`
+	DayVolume                int64                  `protobuf:"varint,8,opt,name=day_volume,json=dayVolume,proto3" json:"day_volume,omitempty"`
+	TimestampMs              int64                  `protobuf:"varint,9,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -589,13 +588,6 @@ func (*StockPrice) Descriptor() ([]byte, []int) {
 func (x *StockPrice) GetStockTicker() string {
 	if x != nil {
 		return x.StockTicker
-	}
-	return ""
-}
-
-func (x *StockPrice) GetTicker() string {
-	if x != nil {
-		return x.Ticker
 	}
 	return ""
 }
@@ -693,21 +685,19 @@ const file_proto_v1_common_types_proto_rawDesc = "" +
 	" \x01(\x03R\n" +
 	"priceCents\x12*\n" +
 	"\x11total_value_cents\x18\v \x01(\x03R\x0ftotalValueCents\x12$\n" +
-	"\x0eexecuted_at_ms\x18\f \x01(\x03R\fexecutedAtMs\"\x97\x03\n" +
+	"\x0eexecuted_at_ms\x18\f \x01(\x03R\fexecutedAtMs\"\xff\x02\n" +
 	"\n" +
 	"StockPrice\x12!\n" +
-	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12\x16\n" +
-	"\x06ticker\x18\x02 \x01(\tR\x06ticker\x12.\n" +
-	"\x13current_price_cents\x18\x03 \x01(\x03R\x11currentPriceCents\x120\n" +
-	"\x14previous_close_cents\x18\x04 \x01(\x03R\x12previousCloseCents\x12!\n" +
-	"\fchange_cents\x18\x05 \x01(\x03R\vchangeCents\x12=\n" +
-	"\x1bchange_percent_basis_points\x18\x06 \x01(\x05R\x18changePercentBasisPoints\x12$\n" +
-	"\x0eday_high_cents\x18\a \x01(\x03R\fdayHighCents\x12\"\n" +
-	"\rday_low_cents\x18\b \x01(\x03R\vdayLowCents\x12\x1d\n" +
+	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12.\n" +
+	"\x13current_price_cents\x18\x02 \x01(\x03R\x11currentPriceCents\x120\n" +
+	"\x14previous_close_cents\x18\x03 \x01(\x03R\x12previousCloseCents\x12!\n" +
+	"\fchange_cents\x18\x04 \x01(\x03R\vchangeCents\x12=\n" +
+	"\x1bchange_percent_basis_points\x18\x05 \x01(\x05R\x18changePercentBasisPoints\x12$\n" +
+	"\x0eday_high_cents\x18\x06 \x01(\x03R\fdayHighCents\x12\"\n" +
+	"\rday_low_cents\x18\a \x01(\x03R\vdayLowCents\x12\x1d\n" +
 	"\n" +
-	"day_volume\x18\t \x01(\x03R\tdayVolume\x12!\n" +
-	"\ftimestamp_ms\x18\n" +
-	" \x01(\x03R\vtimestampMs*>\n" +
+	"day_volume\x18\b \x01(\x03R\tdayVolume\x12!\n" +
+	"\ftimestamp_ms\x18\t \x01(\x03R\vtimestampMs*>\n" +
 	"\tOrderType\x12\x1a\n" +
 	"\x16ORDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +

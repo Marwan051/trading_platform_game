@@ -24,17 +24,18 @@ const (
 
 // PlaceOrderRequest contains the parameters to place a new order.
 type PlaceOrderRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	UserId          string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId           string                 `protobuf:"bytes,2,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
-	StockTicker     string                 `protobuf:"bytes,3,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
-	OrderType       common.OrderType       `protobuf:"varint,4,opt,name=order_type,json=orderType,proto3,enum=common.types.OrderType" json:"order_type,omitempty"`
-	Side            common.OrderSide       `protobuf:"varint,5,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
-	Quantity        int64                  `protobuf:"varint,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	LimitPriceCents int64                  `protobuf:"varint,7,opt,name=limit_price_cents,json=limitPriceCents,proto3" json:"limit_price_cents,omitempty"`
-	ClientOrderId   string                 `protobuf:"bytes,8,opt,name=client_order_id,json=clientOrderId,proto3" json:"client_order_id,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	UserId                string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	BotId                 string                 `protobuf:"bytes,2,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	StockTicker           string                 `protobuf:"bytes,3,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
+	OrderType             common.OrderType       `protobuf:"varint,4,opt,name=order_type,json=orderType,proto3,enum=common.types.OrderType" json:"order_type,omitempty"`
+	Side                  common.OrderSide       `protobuf:"varint,5,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
+	Quantity              int64                  `protobuf:"varint,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	LimitPriceCents       int64                  `protobuf:"varint,7,opt,name=limit_price_cents,json=limitPriceCents,proto3" json:"limit_price_cents,omitempty"`
+	ClientOrderId         string                 `protobuf:"bytes,8,opt,name=client_order_id,json=clientOrderId,proto3" json:"client_order_id,omitempty"`
+	AvailableBalanceCents int64                  `protobuf:"varint,9,opt,name=available_balance_cents,json=availableBalanceCents,proto3" json:"available_balance_cents,omitempty"` // For MARKET BUY: buyer's available cash to cap spend
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *PlaceOrderRequest) Reset() {
@@ -121,6 +122,13 @@ func (x *PlaceOrderRequest) GetClientOrderId() string {
 		return x.ClientOrderId
 	}
 	return ""
+}
+
+func (x *PlaceOrderRequest) GetAvailableBalanceCents() int64 {
+	if x != nil {
+		return x.AvailableBalanceCents
+	}
+	return 0
 }
 
 // PlaceOrderResponse returns the result of placing an order.
@@ -456,7 +464,7 @@ var File_proto_v1_matching_engine_matching_engine_proto protoreflect.FileDescrip
 
 const file_proto_v1_matching_engine_matching_engine_proto_rawDesc = "" +
 	"\n" +
-	".proto/v1/matching_engine/matching_engine.proto\x12\x17trading.matching_engine\x1a\x1bproto/v1/common/types.proto\"\xbb\x02\n" +
+	".proto/v1/matching_engine/matching_engine.proto\x12\x17trading.matching_engine\x1a\x1bproto/v1/common/types.proto\"\xf3\x02\n" +
 	"\x11PlaceOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
 	"\x06bot_id\x18\x02 \x01(\tR\x05botId\x12!\n" +
@@ -466,7 +474,8 @@ const file_proto_v1_matching_engine_matching_engine_proto_rawDesc = "" +
 	"\x04side\x18\x05 \x01(\x0e2\x17.common.types.OrderSideR\x04side\x12\x1a\n" +
 	"\bquantity\x18\x06 \x01(\x03R\bquantity\x12*\n" +
 	"\x11limit_price_cents\x18\a \x01(\x03R\x0flimitPriceCents\x12&\n" +
-	"\x0fclient_order_id\x18\b \x01(\tR\rclientOrderId\"\xbe\x02\n" +
+	"\x0fclient_order_id\x18\b \x01(\tR\rclientOrderId\x126\n" +
+	"\x17available_balance_cents\x18\t \x01(\x03R\x15availableBalanceCents\"\xbe\x02\n" +
 	"\x12PlaceOrderResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x19\n" +
 	"\border_id\x18\x02 \x01(\tR\aorderId\x124\n" +

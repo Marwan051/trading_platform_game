@@ -28,6 +28,7 @@ message PlaceOrderRequest {
   int64 quantity = 6;
   int64 limit_price_cents = 7;
   string client_order_id = 8;
+  int64 available_balance_cents = 9; // For MARKET BUY: buyer's available cash to cap spend
 }
 
 // PlaceOrderResponse returns the result of placing an order.
