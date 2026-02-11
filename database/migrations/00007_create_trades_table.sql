@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE trades (
     id UUID DEFAULT gen_random_uuid(),
-    stock_ticker UUID NOT NULL REFERENCES stocks(id) ON DELETE CASCADE,
+    stock_ticker TEXT NOT NULL REFERENCES stocks(ticker) ON DELETE CASCADE,
     buyer_order_id UUID NOT NULL REFERENCES orders(id),
     seller_order_id UUID NOT NULL REFERENCES orders(id),
     buyer_user_id TEXT,

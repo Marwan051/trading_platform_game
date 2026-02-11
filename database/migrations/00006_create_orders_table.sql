@@ -5,23 +5,20 @@ CREATE TABLE orders (
     user_id TEXT,
     -- References Better Auth user.id
     bot_id UUID REFERENCES bots(id) ON DELETE CASCADE,
-    stock_ticker UUID NOT NULL REFERENCES stocks(id) ON DELETE CASCADE,
+    stock_ticker TEXT NOT NULL REFERENCES stocks(ticker) ON DELETE CASCADE,
     order_type TEXT NOT NULL CHECK (order_type IN ('MARKET', 'LIMIT')),
     side TEXT NOT NULL CHECK (side IN ('BUY', 'SELL')),
     quantity BIGINT NOT NULL CHECK (quantity > 0),
     filled_quantity BIGINT DEFAULT 0 CHECK (filled_quantity >= 0),
     remaining_quantity BIGINT NOT NULL CHECK (remaining_quantity >= 0),
     limit_price_cents BIGINT,
-    time_in_force TEXT DEFAULT 'GTC' CHECK (time_in_force IN ('GTC', 'DAY', 'IOC')),
-    expires_at TIMESTAMPTZ,
     status TEXT DEFAULT 'PENDING' CHECK (
         status IN (
             'PENDING',
             'PARTIAL',
             'FILLED',
             'CANCELLED',
-            'REJECTED',
-            'EXPIRED'
+            'REJECTED'
         )
     ),
     created_at TIMESTAMPTZ DEFAULT NOW(),

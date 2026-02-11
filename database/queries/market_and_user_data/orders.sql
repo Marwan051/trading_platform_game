@@ -2,16 +2,14 @@
 INSERT INTO orders (
         user_id,
         bot_id,
-        stock_id,
+        stock_ticker,
         order_type,
         side,
         quantity,
         remaining_quantity,
-        limit_price_cents,
-        time_in_force,
-        expires_at
+        limit_price_cents
     )
-VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8, $9)
+VALUES ($1, $2, $3, $4, $5, $6, $6, $7)
 RETURNING *;
 -- name: GetOrderByID :one
 SELECT *
@@ -20,14 +18,14 @@ WHERE id = $1;
 -- name: GetPendingOrdersForStock :many
 SELECT *
 FROM orders
-WHERE stock_id = $1
+WHERE stock_ticker = $1
     AND status IN ('PENDING', 'PARTIAL')
 ORDER BY created_at;
 -- name: GetOrderBookBuys :many
 SELECT limit_price_cents,
     SUM(remaining_quantity) as quantity
 FROM orders
-WHERE stock_id = $1
+WHERE stock_ticker = $1
     AND side = 'BUY'
     AND status IN ('PENDING', 'PARTIAL')
     AND order_type = 'LIMIT'
@@ -38,7 +36,7 @@ LIMIT $2;
 SELECT limit_price_cents,
     SUM(remaining_quantity) as quantity
 FROM orders
-WHERE stock_id = $1
+WHERE stock_ticker = $1
     AND side = 'SELL'
     AND status IN ('PENDING', 'PARTIAL')
     AND order_type = 'LIMIT'
@@ -61,10 +59,3 @@ SET status = 'CANCELLED',
     updated_at = NOW()
 WHERE id = $1
 RETURNING *;
--- name: ExpireOrders :exec
-UPDATE orders
-SET status = 'EXPIRED',
-    updated_at = NOW()
-WHERE status IN ('PENDING', 'PARTIAL')
-    AND expires_at IS NOT NULL
-    AND expires_at < NOW();

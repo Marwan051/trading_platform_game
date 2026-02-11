@@ -1,6 +1,6 @@
 -- name: CreateTrade :one
 INSERT INTO trades (
-        stock_id,
+        stock_ticker,
         buyer_order_id,
         seller_order_id,
         buyer_user_id,
@@ -16,6 +16,6 @@ RETURNING *;
 -- name: GetRecentTradesForStock :many
 SELECT *
 FROM trades
-WHERE stock_id = $1
+WHERE stock_ticker = $1
 ORDER BY executed_at DESC
 LIMIT $2;
