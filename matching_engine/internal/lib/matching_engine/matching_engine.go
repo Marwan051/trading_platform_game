@@ -100,6 +100,20 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 		return nil, 0, errors.New("limit price must be greater than 0")
 	}
 
+	// Emit OrderPlacedEvent immediately after validation - order has been accepted
+	if me.eventStreamer != nil {
+		me.eventStreamer.Publish(context.Background(), &types.OrderPlacedEvent{
+			OrderID:         order.OrderId,
+			UserID:          order.UserId,
+			BotID:           order.BotId,
+			StockTicker:     order.StockTicker,
+			OrderType:       order.OrderType,
+			OrderSide:       order.OrderSide,
+			Quantity:        order.Quantity,
+			LimitPriceCents: order.LimitPrice,
+		}, types.OrderPlaced)
+	}
+
 	orderBook := me.getOrCreateOrderBook(order.StockTicker)
 
 	// Lock only this stock's order book
@@ -240,18 +254,6 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 	if remainingQty > 0 && buyOrder.OrderType == types.LimitOrder {
 		buyOrder.Quantity = remainingQty
 		book.BuySide.AddOrder(buyOrder)
-		if me.eventStreamer != nil {
-			me.eventStreamer.Publish(context.Background(), &types.OrderPlacedEvent{
-				OrderID:         buyOrder.OrderId,
-				UserID:          buyOrder.UserId,
-				BotID:           buyOrder.BotId,
-				StockTicker:     buyOrder.StockTicker,
-				OrderType:       buyOrder.OrderType,
-				OrderSide:       buyOrder.OrderSide,
-				Quantity:        buyOrder.Quantity,
-				LimitPriceCents: buyOrder.LimitPrice,
-			}, types.OrderPlaced)
-		}
 	}
 
 	return matches, remainingQty
@@ -386,18 +388,6 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 	if remainingQty > 0 && sellOrder.OrderType == types.LimitOrder {
 		sellOrder.Quantity = remainingQty
 		book.SellSide.AddOrder(sellOrder)
-		if me.eventStreamer != nil {
-			me.eventStreamer.Publish(context.Background(), &types.OrderPlacedEvent{
-				OrderID:         sellOrder.OrderId,
-				UserID:          sellOrder.UserId,
-				BotID:           sellOrder.BotId,
-				StockTicker:     sellOrder.StockTicker,
-				OrderType:       sellOrder.OrderType,
-				OrderSide:       sellOrder.OrderSide,
-				Quantity:        sellOrder.Quantity,
-				LimitPriceCents: sellOrder.LimitPrice,
-			}, types.OrderPlaced)
-		}
 	}
 
 	return matches, remainingQty
