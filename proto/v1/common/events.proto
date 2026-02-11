@@ -39,7 +39,7 @@ message OrderPlacedEvent {
   string order_id = 1;
   string user_id = 2;
   string bot_id = 3;
-  string stock_id = 4;
+  string stock_ticker = 4;
   types.OrderType order_type = 5;
   types.OrderSide side = 6;
   int64 quantity = 7;
@@ -85,7 +85,7 @@ message OrderRejectedEvent {
 // TradeExecutedEvent is emitted when a trade is executed.
 message TradeExecutedEvent {
   string trade_id = 1;
-  string stock_id = 2;
+  string stock_ticker = 2;
   string buyer_order_id = 3;
   string seller_order_id = 4;
   string buyer_user_id = 5;
@@ -99,7 +99,7 @@ message TradeExecutedEvent {
 
 // PriceChangedEvent is emitted when the last price changes.
 message PriceChangedEvent {
-  string stock_id = 1;
+  string stock_ticker = 1;
   int64 old_price_cents = 2;
   int64 new_price_cents = 3;
   string caused_by_trade_id = 4;

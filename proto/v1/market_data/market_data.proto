@@ -147,12 +147,11 @@ message StreamPricesRequest {
 // PriceUpdate represents a real-time update in a stock's price info.
 message PriceUpdate {
   string stock_ticker = 1;
-  string ticker = 2;
-  int64 new_price_cents = 3;
-  int64 change_cents = 4;
-  int32 change_percent_basis_points = 5;
-  int64 timestamp_ms = 6;
-  string caused_by_trade_id = 7;
+  int64 new_price_cents = 2;
+  int64 change_cents = 3;
+  int32 change_percent_basis_points = 4;
+  int64 timestamp_ms = 5;
+  string caused_by_trade_id = 6;
 }
 
 // GetOrderRequest request to fetch details of a specific order.
@@ -209,9 +208,8 @@ message MarketStats {
 // StockStats represents aggregated statistics for a single stock.
 message StockStats {
   string stock_ticker = 1;
-  string ticker = 2;
-  int64 trades_today = 3;
-  int64 volume_today = 4;
-  int32 active_orders = 5;
-  int64 current_price_cents = 6;
+  int64 trades_today = 2;
+  int64 volume_today = 3;
+  int32 active_orders = 4;
+  int64 current_price_cents = 5;
 }
