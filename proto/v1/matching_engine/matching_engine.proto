@@ -21,7 +21,7 @@ service MatchingEngine {
 // PlaceOrderRequest contains the parameters to place a new order.
 message PlaceOrderRequest {
   string user_id = 1;
-  string bot_id = 2;
+  int64 bot_id = 2;
   string stock_ticker = 3;
   common.types.OrderType order_type = 4;
   common.types.OrderSide side = 5;

@@ -28,8 +28,6 @@ func UnmarshalStreamEvent(data []byte) (*streamtypes.Event, streamtypes.EventPay
 		payload = &streamtypes.OrderRejectedEvent{}
 	case streamtypes.TradeExecuted:
 		payload = &streamtypes.TradeExecutedEvent{}
-	case streamtypes.PriceChanged:
-		payload = &streamtypes.PriceChangedEvent{}
 	default:
 		return &baseEvent, nil, fmt.Errorf("unknown event type: %d", baseEvent.Type)
 	}

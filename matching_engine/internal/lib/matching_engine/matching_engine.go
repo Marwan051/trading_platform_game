@@ -44,7 +44,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
 				OrderID:      "",
 				UserID:       "",
-				BotID:        "",
+				BotID:        0,
 				Reason:       "Order is empty",
 				ErrorMessage: "Order is empty",
 			}, types.OrderRejected)
@@ -56,7 +56,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
 				OrderID:      "",
 				UserID:       "",
-				BotID:        "",
+				BotID:        0,
 				Reason:       "Ticker is empty",
 				ErrorMessage: "Ticker is empty",
 			}, types.OrderRejected)
@@ -68,7 +68,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
 				OrderID:      "",
 				UserID:       "",
-				BotID:        "",
+				BotID:        0,
 				Reason:       "OrderId is empty",
 				ErrorMessage: "OrderId is empty",
 			}, types.OrderRejected)

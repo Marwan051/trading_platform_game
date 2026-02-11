@@ -262,7 +262,7 @@ type Order struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	OrderId               string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	UserId                string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId                 string                 `protobuf:"bytes,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	BotId                 int64                  `protobuf:"varint,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
 	StockTicker           string                 `protobuf:"bytes,4,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	OrderType             OrderType              `protobuf:"varint,5,opt,name=order_type,json=orderType,proto3,enum=common.types.OrderType" json:"order_type,omitempty"`
 	Side                  OrderSide              `protobuf:"varint,6,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
@@ -322,11 +322,11 @@ func (x *Order) GetUserId() string {
 	return ""
 }
 
-func (x *Order) GetBotId() string {
+func (x *Order) GetBotId() int64 {
 	if x != nil {
 		return x.BotId
 	}
-	return ""
+	return 0
 }
 
 func (x *Order) GetStockTicker() string {
@@ -414,9 +414,9 @@ type Trade struct {
 	BuyerOrderId    string                 `protobuf:"bytes,3,opt,name=buyer_order_id,json=buyerOrderId,proto3" json:"buyer_order_id,omitempty"`
 	SellerOrderId   string                 `protobuf:"bytes,4,opt,name=seller_order_id,json=sellerOrderId,proto3" json:"seller_order_id,omitempty"`
 	BuyerUserId     string                 `protobuf:"bytes,5,opt,name=buyer_user_id,json=buyerUserId,proto3" json:"buyer_user_id,omitempty"`
-	BuyerBotId      string                 `protobuf:"bytes,6,opt,name=buyer_bot_id,json=buyerBotId,proto3" json:"buyer_bot_id,omitempty"`
+	BuyerBotId      int64                  `protobuf:"varint,6,opt,name=buyer_bot_id,json=buyerBotId,proto3" json:"buyer_bot_id,omitempty"`
 	SellerUserId    string                 `protobuf:"bytes,7,opt,name=seller_user_id,json=sellerUserId,proto3" json:"seller_user_id,omitempty"`
-	SellerBotId     string                 `protobuf:"bytes,8,opt,name=seller_bot_id,json=sellerBotId,proto3" json:"seller_bot_id,omitempty"`
+	SellerBotId     int64                  `protobuf:"varint,8,opt,name=seller_bot_id,json=sellerBotId,proto3" json:"seller_bot_id,omitempty"`
 	Quantity        int64                  `protobuf:"varint,9,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	PriceCents      int64                  `protobuf:"varint,10,opt,name=price_cents,json=priceCents,proto3" json:"price_cents,omitempty"`
 	TotalValueCents int64                  `protobuf:"varint,11,opt,name=total_value_cents,json=totalValueCents,proto3" json:"total_value_cents,omitempty"`
@@ -490,11 +490,11 @@ func (x *Trade) GetBuyerUserId() string {
 	return ""
 }
 
-func (x *Trade) GetBuyerBotId() string {
+func (x *Trade) GetBuyerBotId() int64 {
 	if x != nil {
 		return x.BuyerBotId
 	}
-	return ""
+	return 0
 }
 
 func (x *Trade) GetSellerUserId() string {
@@ -504,11 +504,11 @@ func (x *Trade) GetSellerUserId() string {
 	return ""
 }
 
-func (x *Trade) GetSellerBotId() string {
+func (x *Trade) GetSellerBotId() int64 {
 	if x != nil {
 		return x.SellerBotId
 	}
-	return ""
+	return 0
 }
 
 func (x *Trade) GetQuantity() int64 {
@@ -656,7 +656,7 @@ const file_proto_v1_common_types_proto_rawDesc = "" +
 	"\x05Order\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x03 \x01(\tR\x05botId\x12!\n" +
+	"\x06bot_id\x18\x03 \x01(\x03R\x05botId\x12!\n" +
 	"\fstock_ticker\x18\x04 \x01(\tR\vstockTicker\x126\n" +
 	"\n" +
 	"order_type\x18\x05 \x01(\x0e2\x17.common.types.OrderTypeR\torderType\x12+\n" +
@@ -676,10 +676,10 @@ const file_proto_v1_common_types_proto_rawDesc = "" +
 	"\x0ebuyer_order_id\x18\x03 \x01(\tR\fbuyerOrderId\x12&\n" +
 	"\x0fseller_order_id\x18\x04 \x01(\tR\rsellerOrderId\x12\"\n" +
 	"\rbuyer_user_id\x18\x05 \x01(\tR\vbuyerUserId\x12 \n" +
-	"\fbuyer_bot_id\x18\x06 \x01(\tR\n" +
+	"\fbuyer_bot_id\x18\x06 \x01(\x03R\n" +
 	"buyerBotId\x12$\n" +
 	"\x0eseller_user_id\x18\a \x01(\tR\fsellerUserId\x12\"\n" +
-	"\rseller_bot_id\x18\b \x01(\tR\vsellerBotId\x12\x1a\n" +
+	"\rseller_bot_id\x18\b \x01(\x03R\vsellerBotId\x12\x1a\n" +
 	"\bquantity\x18\t \x01(\x03R\bquantity\x12\x1f\n" +
 	"\vprice_cents\x18\n" +
 	" \x01(\x03R\n" +

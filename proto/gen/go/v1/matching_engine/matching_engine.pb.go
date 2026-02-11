@@ -26,7 +26,7 @@ const (
 type PlaceOrderRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	UserId                string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId                 string                 `protobuf:"bytes,2,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	BotId                 int64                  `protobuf:"varint,2,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
 	StockTicker           string                 `protobuf:"bytes,3,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	OrderType             common.OrderType       `protobuf:"varint,4,opt,name=order_type,json=orderType,proto3,enum=common.types.OrderType" json:"order_type,omitempty"`
 	Side                  common.OrderSide       `protobuf:"varint,5,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
@@ -75,11 +75,11 @@ func (x *PlaceOrderRequest) GetUserId() string {
 	return ""
 }
 
-func (x *PlaceOrderRequest) GetBotId() string {
+func (x *PlaceOrderRequest) GetBotId() int64 {
 	if x != nil {
 		return x.BotId
 	}
-	return ""
+	return 0
 }
 
 func (x *PlaceOrderRequest) GetStockTicker() string {
@@ -467,7 +467,7 @@ const file_proto_v1_matching_engine_matching_engine_proto_rawDesc = "" +
 	".proto/v1/matching_engine/matching_engine.proto\x12\x17trading.matching_engine\x1a\x1bproto/v1/common/types.proto\"\xf3\x02\n" +
 	"\x11PlaceOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x02 \x01(\tR\x05botId\x12!\n" +
+	"\x06bot_id\x18\x02 \x01(\x03R\x05botId\x12!\n" +
 	"\fstock_ticker\x18\x03 \x01(\tR\vstockTicker\x126\n" +
 	"\n" +
 	"order_type\x18\x04 \x01(\x0e2\x17.common.types.OrderTypeR\torderType\x12+\n" +

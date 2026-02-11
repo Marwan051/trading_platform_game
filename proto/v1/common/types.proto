@@ -49,7 +49,7 @@ enum ErrorCode {
 message Order {
   string order_id = 1;
   string user_id = 2;
-  string bot_id = 3;
+  int64 bot_id = 3;
   string stock_ticker = 4;
   OrderType order_type = 5;
   OrderSide side = 6;
@@ -70,9 +70,9 @@ message Trade {
   string buyer_order_id = 3;
   string seller_order_id = 4;
   string buyer_user_id = 5;
-  string buyer_bot_id = 6;
+  int64 buyer_bot_id = 6;
   string seller_user_id = 7;
-  string seller_bot_id = 8;
+  int64 seller_bot_id = 8;
   int64 quantity = 9;
   int64 price_cents = 10;
   int64 total_value_cents = 11;

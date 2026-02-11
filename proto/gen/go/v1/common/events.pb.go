@@ -32,7 +32,6 @@ const (
 	EventType_ORDER_PARTIALLY_FILLED EventType = 4
 	EventType_ORDER_REJECTED         EventType = 5
 	EventType_TRADE_EXECUTED         EventType = 6
-	EventType_PRICE_CHANGED          EventType = 7
 )
 
 // Enum value maps for EventType.
@@ -45,7 +44,6 @@ var (
 		4: "ORDER_PARTIALLY_FILLED",
 		5: "ORDER_REJECTED",
 		6: "TRADE_EXECUTED",
-		7: "PRICE_CHANGED",
 	}
 	EventType_value = map[string]int32{
 		"EVENT_TYPE_UNSPECIFIED": 0,
@@ -55,7 +53,6 @@ var (
 		"ORDER_PARTIALLY_FILLED": 4,
 		"ORDER_REJECTED":         5,
 		"TRADE_EXECUTED":         6,
-		"PRICE_CHANGED":          7,
 	}
 )
 
@@ -99,7 +96,6 @@ type EngineEvent struct {
 	OrderPartiallyFilled *OrderPartiallyFilledEvent `protobuf:"bytes,13,opt,name=order_partially_filled,json=orderPartiallyFilled,proto3" json:"order_partially_filled,omitempty"`
 	OrderRejected        *OrderRejectedEvent        `protobuf:"bytes,14,opt,name=order_rejected,json=orderRejected,proto3" json:"order_rejected,omitempty"`
 	TradeExecuted        *TradeExecutedEvent        `protobuf:"bytes,15,opt,name=trade_executed,json=tradeExecuted,proto3" json:"trade_executed,omitempty"`
-	PriceChanged         *PriceChangedEvent         `protobuf:"bytes,16,opt,name=price_changed,json=priceChanged,proto3" json:"price_changed,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -197,19 +193,12 @@ func (x *EngineEvent) GetTradeExecuted() *TradeExecutedEvent {
 	return nil
 }
 
-func (x *EngineEvent) GetPriceChanged() *PriceChangedEvent {
-	if x != nil {
-		return x.PriceChanged
-	}
-	return nil
-}
-
 // OrderPlacedEvent is emitted when a new order is accepted.
 type OrderPlacedEvent struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	OrderId         string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	UserId          string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId           string                 `protobuf:"bytes,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	BotId           int64                  `protobuf:"varint,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
 	StockTicker     string                 `protobuf:"bytes,4,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	OrderType       OrderType              `protobuf:"varint,5,opt,name=order_type,json=orderType,proto3,enum=common.types.OrderType" json:"order_type,omitempty"`
 	Side            OrderSide              `protobuf:"varint,6,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
@@ -263,11 +252,11 @@ func (x *OrderPlacedEvent) GetUserId() string {
 	return ""
 }
 
-func (x *OrderPlacedEvent) GetBotId() string {
+func (x *OrderPlacedEvent) GetBotId() int64 {
 	if x != nil {
 		return x.BotId
 	}
-	return ""
+	return 0
 }
 
 func (x *OrderPlacedEvent) GetStockTicker() string {
@@ -310,7 +299,7 @@ type OrderCancelledEvent struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	OrderId           string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	UserId            string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId             string                 `protobuf:"bytes,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	BotId             int64                  `protobuf:"varint,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
 	RemainingQuantity int64                  `protobuf:"varint,4,opt,name=remaining_quantity,json=remainingQuantity,proto3" json:"remaining_quantity,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -360,11 +349,11 @@ func (x *OrderCancelledEvent) GetUserId() string {
 	return ""
 }
 
-func (x *OrderCancelledEvent) GetBotId() string {
+func (x *OrderCancelledEvent) GetBotId() int64 {
 	if x != nil {
 		return x.BotId
 	}
-	return ""
+	return 0
 }
 
 func (x *OrderCancelledEvent) GetRemainingQuantity() int64 {
@@ -379,7 +368,7 @@ type OrderFilledEvent struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	OrderId               string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	UserId                string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId                 string                 `protobuf:"bytes,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	BotId                 int64                  `protobuf:"varint,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
 	TotalQuantity         int64                  `protobuf:"varint,4,opt,name=total_quantity,json=totalQuantity,proto3" json:"total_quantity,omitempty"`
 	AverageFillPriceCents int64                  `protobuf:"varint,5,opt,name=average_fill_price_cents,json=averageFillPriceCents,proto3" json:"average_fill_price_cents,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -430,11 +419,11 @@ func (x *OrderFilledEvent) GetUserId() string {
 	return ""
 }
 
-func (x *OrderFilledEvent) GetBotId() string {
+func (x *OrderFilledEvent) GetBotId() int64 {
 	if x != nil {
 		return x.BotId
 	}
-	return ""
+	return 0
 }
 
 func (x *OrderFilledEvent) GetTotalQuantity() int64 {
@@ -456,7 +445,7 @@ type OrderPartiallyFilledEvent struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	OrderId           string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	UserId            string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId             string                 `protobuf:"bytes,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	BotId             int64                  `protobuf:"varint,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
 	FilledQuantity    int64                  `protobuf:"varint,4,opt,name=filled_quantity,json=filledQuantity,proto3" json:"filled_quantity,omitempty"`
 	RemainingQuantity int64                  `protobuf:"varint,5,opt,name=remaining_quantity,json=remainingQuantity,proto3" json:"remaining_quantity,omitempty"`
 	FillPriceCents    int64                  `protobuf:"varint,6,opt,name=fill_price_cents,json=fillPriceCents,proto3" json:"fill_price_cents,omitempty"`
@@ -508,11 +497,11 @@ func (x *OrderPartiallyFilledEvent) GetUserId() string {
 	return ""
 }
 
-func (x *OrderPartiallyFilledEvent) GetBotId() string {
+func (x *OrderPartiallyFilledEvent) GetBotId() int64 {
 	if x != nil {
 		return x.BotId
 	}
-	return ""
+	return 0
 }
 
 func (x *OrderPartiallyFilledEvent) GetFilledQuantity() int64 {
@@ -541,7 +530,7 @@ type OrderRejectedEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OrderId       string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId         string                 `protobuf:"bytes,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	BotId         int64                  `protobuf:"varint,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
 	Reason        ErrorCode              `protobuf:"varint,4,opt,name=reason,proto3,enum=common.types.ErrorCode" json:"reason,omitempty"`
 	ErrorMessage  string                 `protobuf:"bytes,5,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -592,11 +581,11 @@ func (x *OrderRejectedEvent) GetUserId() string {
 	return ""
 }
 
-func (x *OrderRejectedEvent) GetBotId() string {
+func (x *OrderRejectedEvent) GetBotId() int64 {
 	if x != nil {
 		return x.BotId
 	}
-	return ""
+	return 0
 }
 
 func (x *OrderRejectedEvent) GetReason() ErrorCode {
@@ -621,9 +610,9 @@ type TradeExecutedEvent struct {
 	BuyerOrderId    string                 `protobuf:"bytes,3,opt,name=buyer_order_id,json=buyerOrderId,proto3" json:"buyer_order_id,omitempty"`
 	SellerOrderId   string                 `protobuf:"bytes,4,opt,name=seller_order_id,json=sellerOrderId,proto3" json:"seller_order_id,omitempty"`
 	BuyerUserId     string                 `protobuf:"bytes,5,opt,name=buyer_user_id,json=buyerUserId,proto3" json:"buyer_user_id,omitempty"`
-	BuyerBotId      string                 `protobuf:"bytes,6,opt,name=buyer_bot_id,json=buyerBotId,proto3" json:"buyer_bot_id,omitempty"`
+	BuyerBotId      int64                  `protobuf:"varint,6,opt,name=buyer_bot_id,json=buyerBotId,proto3" json:"buyer_bot_id,omitempty"`
 	SellerUserId    string                 `protobuf:"bytes,7,opt,name=seller_user_id,json=sellerUserId,proto3" json:"seller_user_id,omitempty"`
-	SellerBotId     string                 `protobuf:"bytes,8,opt,name=seller_bot_id,json=sellerBotId,proto3" json:"seller_bot_id,omitempty"`
+	SellerBotId     int64                  `protobuf:"varint,8,opt,name=seller_bot_id,json=sellerBotId,proto3" json:"seller_bot_id,omitempty"`
 	Quantity        int64                  `protobuf:"varint,9,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	PriceCents      int64                  `protobuf:"varint,10,opt,name=price_cents,json=priceCents,proto3" json:"price_cents,omitempty"`
 	TotalValueCents int64                  `protobuf:"varint,11,opt,name=total_value_cents,json=totalValueCents,proto3" json:"total_value_cents,omitempty"`
@@ -696,11 +685,11 @@ func (x *TradeExecutedEvent) GetBuyerUserId() string {
 	return ""
 }
 
-func (x *TradeExecutedEvent) GetBuyerBotId() string {
+func (x *TradeExecutedEvent) GetBuyerBotId() int64 {
 	if x != nil {
 		return x.BuyerBotId
 	}
-	return ""
+	return 0
 }
 
 func (x *TradeExecutedEvent) GetSellerUserId() string {
@@ -710,11 +699,11 @@ func (x *TradeExecutedEvent) GetSellerUserId() string {
 	return ""
 }
 
-func (x *TradeExecutedEvent) GetSellerBotId() string {
+func (x *TradeExecutedEvent) GetSellerBotId() int64 {
 	if x != nil {
 		return x.SellerBotId
 	}
-	return ""
+	return 0
 }
 
 func (x *TradeExecutedEvent) GetQuantity() int64 {
@@ -738,80 +727,11 @@ func (x *TradeExecutedEvent) GetTotalValueCents() int64 {
 	return 0
 }
 
-// PriceChangedEvent is emitted when the last price changes.
-type PriceChangedEvent struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	StockTicker     string                 `protobuf:"bytes,1,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
-	OldPriceCents   int64                  `protobuf:"varint,2,opt,name=old_price_cents,json=oldPriceCents,proto3" json:"old_price_cents,omitempty"`
-	NewPriceCents   int64                  `protobuf:"varint,3,opt,name=new_price_cents,json=newPriceCents,proto3" json:"new_price_cents,omitempty"`
-	CausedByTradeId string                 `protobuf:"bytes,4,opt,name=caused_by_trade_id,json=causedByTradeId,proto3" json:"caused_by_trade_id,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *PriceChangedEvent) Reset() {
-	*x = PriceChangedEvent{}
-	mi := &file_proto_v1_common_events_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PriceChangedEvent) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PriceChangedEvent) ProtoMessage() {}
-
-func (x *PriceChangedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_v1_common_events_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PriceChangedEvent.ProtoReflect.Descriptor instead.
-func (*PriceChangedEvent) Descriptor() ([]byte, []int) {
-	return file_proto_v1_common_events_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *PriceChangedEvent) GetStockTicker() string {
-	if x != nil {
-		return x.StockTicker
-	}
-	return ""
-}
-
-func (x *PriceChangedEvent) GetOldPriceCents() int64 {
-	if x != nil {
-		return x.OldPriceCents
-	}
-	return 0
-}
-
-func (x *PriceChangedEvent) GetNewPriceCents() int64 {
-	if x != nil {
-		return x.NewPriceCents
-	}
-	return 0
-}
-
-func (x *PriceChangedEvent) GetCausedByTradeId() string {
-	if x != nil {
-		return x.CausedByTradeId
-	}
-	return ""
-}
-
 var File_proto_v1_common_events_proto protoreflect.FileDescriptor
 
 const file_proto_v1_common_events_proto_rawDesc = "" +
 	"\n" +
-	"\x1cproto/v1/common/events.proto\x12\rcommon.events\x1a\x1bproto/v1/common/types.proto\"\x94\x05\n" +
+	"\x1cproto/v1/common/events.proto\x12\rcommon.events\x1a\x1bproto/v1/common/types.proto\"\xcd\x04\n" +
 	"\vEngineEvent\x12\x19\n" +
 	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12!\n" +
 	"\ftimestamp_ms\x18\x02 \x01(\x03R\vtimestampMs\x127\n" +
@@ -823,12 +743,11 @@ const file_proto_v1_common_events_proto_rawDesc = "" +
 	"\forder_filled\x18\f \x01(\v2\x1f.common.events.OrderFilledEventR\vorderFilled\x12^\n" +
 	"\x16order_partially_filled\x18\r \x01(\v2(.common.events.OrderPartiallyFilledEventR\x14orderPartiallyFilled\x12H\n" +
 	"\x0eorder_rejected\x18\x0e \x01(\v2!.common.events.OrderRejectedEventR\rorderRejected\x12H\n" +
-	"\x0etrade_executed\x18\x0f \x01(\v2!.common.events.TradeExecutedEventR\rtradeExecuted\x12E\n" +
-	"\rprice_changed\x18\x10 \x01(\v2 .common.events.PriceChangedEventR\fpriceChanged\"\xad\x02\n" +
+	"\x0etrade_executed\x18\x0f \x01(\v2!.common.events.TradeExecutedEventR\rtradeExecuted\"\xad\x02\n" +
 	"\x10OrderPlacedEvent\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x03 \x01(\tR\x05botId\x12!\n" +
+	"\x06bot_id\x18\x03 \x01(\x03R\x05botId\x12!\n" +
 	"\fstock_ticker\x18\x04 \x01(\tR\vstockTicker\x126\n" +
 	"\n" +
 	"order_type\x18\x05 \x01(\x0e2\x17.common.types.OrderTypeR\torderType\x12+\n" +
@@ -838,25 +757,25 @@ const file_proto_v1_common_events_proto_rawDesc = "" +
 	"\x13OrderCancelledEvent\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x03 \x01(\tR\x05botId\x12-\n" +
+	"\x06bot_id\x18\x03 \x01(\x03R\x05botId\x12-\n" +
 	"\x12remaining_quantity\x18\x04 \x01(\x03R\x11remainingQuantity\"\xbd\x01\n" +
 	"\x10OrderFilledEvent\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x03 \x01(\tR\x05botId\x12%\n" +
+	"\x06bot_id\x18\x03 \x01(\x03R\x05botId\x12%\n" +
 	"\x0etotal_quantity\x18\x04 \x01(\x03R\rtotalQuantity\x127\n" +
 	"\x18average_fill_price_cents\x18\x05 \x01(\x03R\x15averageFillPriceCents\"\xe8\x01\n" +
 	"\x19OrderPartiallyFilledEvent\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x03 \x01(\tR\x05botId\x12'\n" +
+	"\x06bot_id\x18\x03 \x01(\x03R\x05botId\x12'\n" +
 	"\x0ffilled_quantity\x18\x04 \x01(\x03R\x0efilledQuantity\x12-\n" +
 	"\x12remaining_quantity\x18\x05 \x01(\x03R\x11remainingQuantity\x12(\n" +
 	"\x10fill_price_cents\x18\x06 \x01(\x03R\x0efillPriceCents\"\xb5\x01\n" +
 	"\x12OrderRejectedEvent\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x03 \x01(\tR\x05botId\x12/\n" +
+	"\x06bot_id\x18\x03 \x01(\x03R\x05botId\x12/\n" +
 	"\x06reason\x18\x04 \x01(\x0e2\x17.common.types.ErrorCodeR\x06reason\x12#\n" +
 	"\rerror_message\x18\x05 \x01(\tR\ferrorMessage\"\x99\x03\n" +
 	"\x12TradeExecutedEvent\x12\x19\n" +
@@ -865,20 +784,15 @@ const file_proto_v1_common_events_proto_rawDesc = "" +
 	"\x0ebuyer_order_id\x18\x03 \x01(\tR\fbuyerOrderId\x12&\n" +
 	"\x0fseller_order_id\x18\x04 \x01(\tR\rsellerOrderId\x12\"\n" +
 	"\rbuyer_user_id\x18\x05 \x01(\tR\vbuyerUserId\x12 \n" +
-	"\fbuyer_bot_id\x18\x06 \x01(\tR\n" +
+	"\fbuyer_bot_id\x18\x06 \x01(\x03R\n" +
 	"buyerBotId\x12$\n" +
 	"\x0eseller_user_id\x18\a \x01(\tR\fsellerUserId\x12\"\n" +
-	"\rseller_bot_id\x18\b \x01(\tR\vsellerBotId\x12\x1a\n" +
+	"\rseller_bot_id\x18\b \x01(\x03R\vsellerBotId\x12\x1a\n" +
 	"\bquantity\x18\t \x01(\x03R\bquantity\x12\x1f\n" +
 	"\vprice_cents\x18\n" +
 	" \x01(\x03R\n" +
 	"priceCents\x12*\n" +
-	"\x11total_value_cents\x18\v \x01(\x03R\x0ftotalValueCents\"\xb3\x01\n" +
-	"\x11PriceChangedEvent\x12!\n" +
-	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\x12&\n" +
-	"\x0fold_price_cents\x18\x02 \x01(\x03R\roldPriceCents\x12&\n" +
-	"\x0fnew_price_cents\x18\x03 \x01(\x03R\rnewPriceCents\x12+\n" +
-	"\x12caused_by_trade_id\x18\x04 \x01(\tR\x0fcausedByTradeId*\xb7\x01\n" +
+	"\x11total_value_cents\x18\v \x01(\x03R\x0ftotalValueCents*\xa4\x01\n" +
 	"\tEventType\x12\x1a\n" +
 	"\x16EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fORDER_PLACED\x10\x01\x12\x13\n" +
@@ -886,8 +800,7 @@ const file_proto_v1_common_events_proto_rawDesc = "" +
 	"\fORDER_FILLED\x10\x03\x12\x1a\n" +
 	"\x16ORDER_PARTIALLY_FILLED\x10\x04\x12\x12\n" +
 	"\x0eORDER_REJECTED\x10\x05\x12\x12\n" +
-	"\x0eTRADE_EXECUTED\x10\x06\x12\x11\n" +
-	"\rPRICE_CHANGED\x10\aBDZBgithub.com/Marwan051/tradding_platform_game/proto/gen/go/v1/commonb\x06proto3"
+	"\x0eTRADE_EXECUTED\x10\x06BDZBgithub.com/Marwan051/tradding_platform_game/proto/gen/go/v1/commonb\x06proto3"
 
 var (
 	file_proto_v1_common_events_proto_rawDescOnce sync.Once
@@ -902,7 +815,7 @@ func file_proto_v1_common_events_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_v1_common_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_v1_common_events_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_proto_v1_common_events_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_proto_v1_common_events_proto_goTypes = []any{
 	(EventType)(0),                    // 0: common.events.EventType
 	(*EngineEvent)(nil),               // 1: common.events.EngineEvent
@@ -912,10 +825,9 @@ var file_proto_v1_common_events_proto_goTypes = []any{
 	(*OrderPartiallyFilledEvent)(nil), // 5: common.events.OrderPartiallyFilledEvent
 	(*OrderRejectedEvent)(nil),        // 6: common.events.OrderRejectedEvent
 	(*TradeExecutedEvent)(nil),        // 7: common.events.TradeExecutedEvent
-	(*PriceChangedEvent)(nil),         // 8: common.events.PriceChangedEvent
-	(OrderType)(0),                    // 9: common.types.OrderType
-	(OrderSide)(0),                    // 10: common.types.OrderSide
-	(ErrorCode)(0),                    // 11: common.types.ErrorCode
+	(OrderType)(0),                    // 8: common.types.OrderType
+	(OrderSide)(0),                    // 9: common.types.OrderSide
+	(ErrorCode)(0),                    // 10: common.types.ErrorCode
 }
 var file_proto_v1_common_events_proto_depIdxs = []int32{
 	0,  // 0: common.events.EngineEvent.event_type:type_name -> common.events.EventType
@@ -925,15 +837,14 @@ var file_proto_v1_common_events_proto_depIdxs = []int32{
 	5,  // 4: common.events.EngineEvent.order_partially_filled:type_name -> common.events.OrderPartiallyFilledEvent
 	6,  // 5: common.events.EngineEvent.order_rejected:type_name -> common.events.OrderRejectedEvent
 	7,  // 6: common.events.EngineEvent.trade_executed:type_name -> common.events.TradeExecutedEvent
-	8,  // 7: common.events.EngineEvent.price_changed:type_name -> common.events.PriceChangedEvent
-	9,  // 8: common.events.OrderPlacedEvent.order_type:type_name -> common.types.OrderType
-	10, // 9: common.events.OrderPlacedEvent.side:type_name -> common.types.OrderSide
-	11, // 10: common.events.OrderRejectedEvent.reason:type_name -> common.types.ErrorCode
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	8,  // 7: common.events.OrderPlacedEvent.order_type:type_name -> common.types.OrderType
+	9,  // 8: common.events.OrderPlacedEvent.side:type_name -> common.types.OrderSide
+	10, // 9: common.events.OrderRejectedEvent.reason:type_name -> common.types.ErrorCode
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_proto_v1_common_events_proto_init() }
@@ -948,7 +859,7 @@ func file_proto_v1_common_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_v1_common_events_proto_rawDesc), len(file_proto_v1_common_events_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
