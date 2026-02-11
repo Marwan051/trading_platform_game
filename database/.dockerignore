@@ -1,0 +1,8 @@
+# Ignore everything except what's needed for Docker build
+*
+!Dockerfile
+!Dockerfile.migrator
+!migrations/
+!init/
+!README.md
+migrations/**/*.md
