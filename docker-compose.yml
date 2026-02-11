@@ -1,11 +1,16 @@
 services:
+  # Database: TimescaleDB (PostgreSQL with time-series extensions)
+  # To use custom image with init scripts, uncomment build section and comment image line:
+  # build:
+  #   context: ./database
+  #   dockerfile: Dockerfile
   db:
     image: timescale/timescaledb:latest-pg16
     container_name: trading_db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-trading}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trading_secret}
-      POSTGRES_DB: ${POSTGRES_DB:-trading_game}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-trading_platform}
     ports:
       - "5432:5432"
     volumes:
@@ -14,7 +19,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-trading} -d ${POSTGRES_DB:-trading_game}",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-trading_platform}",
         ]
       interval: 5s
       timeout: 5s
@@ -22,7 +27,7 @@ services:
 
   migrator:
     build:
-      context: ./backend/database
+      context: ./database
       dockerfile: Dockerfile.migrator
     container_name: trading_migrator
     depends_on:
@@ -30,21 +35,62 @@ services:
         condition: service_healthy
     environment:
       GOOSE_DRIVER: postgres
-      GOOSE_DBSTRING: "postgres://${POSTGRES_USER:-trading}:${POSTGRES_PASSWORD:-trading_secret}@db:5432/${POSTGRES_DB:-trading_game}?sslmode=disable"
+      GOOSE_DBSTRING: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-trading_platform}?sslmode=disable"
     command: ["up"]
 
-  backend:
+  valkey:
+    image: valkey/valkey:latest
+    container_name: trading_valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  matching_engine:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: trading_backend
+      context: .
+      dockerfile: ./matching_engine/Dockerfile
+    container_name: trading_matching_engine
     depends_on:
+      valkey:
+        condition: service_healthy
+    environment:
+      GRPC_ADDR: "0.0.0.0:50051"
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-30}
+      VALKEY_HOST: valkey
+      VALKEY_PORT: "6379"
+      VALKEY_STREAM_NAME: ${VALKEY_STREAM_NAME:-matching_engine_stream}
+    ports:
+      - "50051:50051"
+    restart: unless-stopped
+
+  event_listener:
+    build:
+      context: ./event_listener
+      dockerfile: Dockerfile
+    container_name: trading_event_listener
+    depends_on:
+      db:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
       migrator:
         condition: service_completed_successfully
     environment:
-      DATABASE_URL: "postgres://${POSTGRES_USER:-trading}:${POSTGRES_PASSWORD:-trading_secret}@db:5432/${POSTGRES_DB:-trading_game}?sslmode=disable"
-    ports:
-      - "8080:8080"
+      DATABASE_URL: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-trading_platform}?sslmode=disable"
+      VALKEY_HOST: valkey
+      VALKEY_PORT: "6379"
+      VALKEY_STREAM_NAME: ${VALKEY_STREAM_NAME:-matching_engine_stream}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-30}
+    restart: unless-stopped
 
 volumes:
   trading_db_data:
+  valkey_data:

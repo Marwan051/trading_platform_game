@@ -1,0 +1,55 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts and dependencies
+**/node_modules
+**/dist
+**/build
+**/tmp
+**/.cache
+
+# Go specific (exclude when not needed for service being built)
+backend/**
+frontend/**
+event_listener/**
+
+# Database
+database/queries
+database/init
+
+# Testing
+**/*_test.go
+**/test
+**/tests
+**/__tests__
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose*.yml
+**/Dockerfile
+**/.dockerignore
