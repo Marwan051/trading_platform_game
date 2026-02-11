@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION update_user_portfolio_value(p_user_id TEXT) RETURNS BIGINT AS $
+CREATE OR REPLACE FUNCTION update_user_portfolio_value(p_user_id TEXT) RETURNS BIGINT AS $$
 DECLARE v_portfolio_value_cents BIGINT;
 BEGIN
 SELECT COALESCE(SUM(p.quantity * s.current_price_cents), 0) INTO v_portfolio_value_cents
@@ -13,9 +13,9 @@ SET total_portfolio_value_cents = cash_balance_cents + v_portfolio_value_cents,
 WHERE user_id = p_user_id;
 RETURN v_portfolio_value_cents;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 -- Function to update bot portfolio value
-CREATE OR REPLACE FUNCTION update_bot_portfolio_value(p_bot_id UUID) RETURNS BIGINT AS $
+CREATE OR REPLACE FUNCTION update_bot_portfolio_value(p_bot_id UUID) RETURNS BIGINT AS $$
 DECLARE v_portfolio_value_cents BIGINT;
 BEGIN
 SELECT COALESCE(SUM(p.quantity * s.current_price_cents), 0) INTO v_portfolio_value_cents
@@ -28,13 +28,13 @@ SET total_portfolio_value_cents = cash_balance_cents + v_portfolio_value_cents,
 WHERE id = p_bot_id;
 RETURN v_portfolio_value_cents;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 -- Function to get order book depth
 CREATE OR REPLACE FUNCTION get_order_book(p_stock_ticker TEXT, p_depth INTEGER DEFAULT 10) RETURNS TABLE(
         side TEXT,
         price_cents BIGINT,
         quantity BIGINT
-    ) AS $ BEGIN RETURN QUERY (
+    ) AS $$ BEGIN RETURN QUERY (
         SELECT 'BUY'::TEXT,
             o.limit_price_cents,
             SUM(o.remaining_quantity)
@@ -62,7 +62,7 @@ UNION ALL
     LIMIT p_depth
 );
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 -- +goose StatementEnd
 -- +goose Down
 -- +goose StatementBegin

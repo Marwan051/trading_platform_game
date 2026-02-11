@@ -6,7 +6,7 @@ CREATE TABLE positions (
     -- References Better Auth user.id
     bot_id UUID REFERENCES bots(id) ON DELETE CASCADE,
     stock_ticker TEXT NOT NULL REFERENCES stocks(ticker) ON DELETE CASCADE,
-    quantity BIGINT NOT NULL CHECK (quantity > 0),
+    quantity BIGINT NOT NULL CHECK (quantity >= 0),
     quantity_hold BIGINT DEFAULT 0 CHECK (quantity_hold >= 0),
     average_cost_cents BIGINT NOT NULL,
     total_cost_cents BIGINT NOT NULL,
