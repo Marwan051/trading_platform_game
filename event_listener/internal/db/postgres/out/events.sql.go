@@ -144,21 +144,16 @@ buyer_add_position AS (
             trader_id,
             stock_ticker,
             quantity,
-            average_cost_cents,
             total_cost_cents
         )
     SELECT ti.buyer_trader_id,
         ti.stock_ticker,
         ti.quantity,
-        ti.price_cents,
         ti.total_value_cents
     FROM trade_info ti ON CONFLICT (trader_id, stock_ticker) DO
     UPDATE
     SET quantity = positions.quantity + EXCLUDED.quantity,
         total_cost_cents = positions.total_cost_cents + EXCLUDED.total_cost_cents,
-        average_cost_cents = (
-            positions.total_cost_cents + EXCLUDED.total_cost_cents
-        ) / (positions.quantity + EXCLUDED.quantity),
         updated_at = NOW()
 ),
 seller_release_hold AS (
@@ -166,7 +161,9 @@ seller_release_hold AS (
     SET quantity_hold = positions.quantity_hold - ti.quantity,
         total_cost_cents = GREATEST(
             0,
-            positions.total_cost_cents - (ti.quantity * positions.average_cost_cents)
+            positions.total_cost_cents - (
+                (positions.total_cost_cents * ti.quantity) / NULLIF(positions.quantity, 0)
+            )
         ),
         updated_at = NOW()
     FROM trade_info ti
@@ -311,21 +308,16 @@ buyer_add_position AS (
             trader_id,
             stock_ticker,
             quantity,
-            average_cost_cents,
             total_cost_cents
         )
     SELECT ti.buyer_trader_id,
         ti.stock_ticker,
         ti.quantity,
-        ti.price_cents,
         ti.total_value_cents
     FROM trade_info ti ON CONFLICT (trader_id, stock_ticker) DO
     UPDATE
     SET quantity = positions.quantity + EXCLUDED.quantity,
         total_cost_cents = positions.total_cost_cents + EXCLUDED.total_cost_cents,
-        average_cost_cents = (
-            positions.total_cost_cents + EXCLUDED.total_cost_cents
-        ) / (positions.quantity + EXCLUDED.quantity),
         updated_at = NOW()
 ),
 seller_release_hold AS (
@@ -333,7 +325,9 @@ seller_release_hold AS (
     SET quantity_hold = positions.quantity_hold - ti.quantity,
         total_cost_cents = GREATEST(
             0,
-            positions.total_cost_cents - (ti.quantity * positions.average_cost_cents)
+            positions.total_cost_cents - (
+                (positions.total_cost_cents * ti.quantity) / NULLIF(positions.quantity, 0)
+            )
         ),
         updated_at = NOW()
     FROM trade_info ti

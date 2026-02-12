@@ -36,15 +36,14 @@ type Order struct {
 }
 
 type Position struct {
-	ID               int64              `json:"id"`
-	TraderID         int64              `json:"trader_id"`
-	StockTicker      string             `json:"stock_ticker"`
-	Quantity         int64              `json:"quantity"`
-	QuantityHold     pgtype.Int8        `json:"quantity_hold"`
-	AverageCostCents int64              `json:"average_cost_cents"`
-	TotalCostCents   int64              `json:"total_cost_cents"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	ID             int64              `json:"id"`
+	TraderID       int64              `json:"trader_id"`
+	StockTicker    string             `json:"stock_ticker"`
+	Quantity       int64              `json:"quantity"`
+	QuantityHold   pgtype.Int8        `json:"quantity_hold"`
+	TotalCostCents int64              `json:"total_cost_cents"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Price1hour struct {
@@ -105,8 +104,6 @@ type Trader struct {
 	CashHoldCents            pgtype.Int8        `json:"cash_hold_cents"`
 	TotalPortfolioValueCents pgtype.Int8        `json:"total_portfolio_value_cents"`
 	IsActive                 pgtype.Bool        `json:"is_active"`
-	TradingStrategy          pgtype.Text        `json:"trading_strategy"`
-	RiskTolerance            pgtype.Text        `json:"risk_tolerance"`
 	LastActiveAt             pgtype.Timestamptz `json:"last_active_at"`
 	LastTradeAt              pgtype.Timestamptz `json:"last_trade_at"`
 	TotalTradesCount         pgtype.Int4        `json:"total_trades_count"`

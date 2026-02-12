@@ -6,7 +6,6 @@ CREATE TABLE positions (
     stock_ticker TEXT NOT NULL REFERENCES stocks(ticker) ON DELETE CASCADE,
     quantity BIGINT NOT NULL CHECK (quantity >= 0),
     quantity_hold BIGINT DEFAULT 0 CHECK (quantity_hold >= 0),
-    average_cost_cents BIGINT NOT NULL,
     total_cost_cents BIGINT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
