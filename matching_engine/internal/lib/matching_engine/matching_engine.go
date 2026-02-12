@@ -8,7 +8,6 @@ import (
 
 	streamingclient "github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/events/streaming_client"
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/types"
-	"github.com/google/uuid"
 )
 
 // MatchingEngine handles order matching for all stocks
@@ -43,8 +42,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 		if me.eventStreamer != nil {
 			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
 				OrderID:      "",
-				UserID:       "",
-				BotID:        0,
+				TraderID:     0,
 				Reason:       "Order is empty",
 				ErrorMessage: "Order is empty",
 			}, types.OrderRejected)
@@ -55,8 +53,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 		if me.eventStreamer != nil {
 			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
 				OrderID:      "",
-				UserID:       "",
-				BotID:        0,
+				TraderID:     0,
 				Reason:       "Ticker is empty",
 				ErrorMessage: "Ticker is empty",
 			}, types.OrderRejected)
@@ -67,8 +64,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 		if me.eventStreamer != nil {
 			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
 				OrderID:      "",
-				UserID:       "",
-				BotID:        0,
+				TraderID:     0,
 				Reason:       "OrderId is empty",
 				ErrorMessage: "OrderId is empty",
 			}, types.OrderRejected)
@@ -79,8 +75,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 		if me.eventStreamer != nil {
 			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
 				OrderID:      order.OrderId,
-				UserID:       order.UserId,
-				BotID:        order.BotId,
+				TraderID:     order.TraderId,
 				Reason:       "Invalid quantity",
 				ErrorMessage: "Quantity must be greater than 0",
 			}, types.OrderRejected)
@@ -91,8 +86,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 		if me.eventStreamer != nil {
 			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
 				OrderID:      order.OrderId,
-				UserID:       order.UserId,
-				BotID:        order.BotId,
+				TraderID:     order.TraderId,
 				Reason:       "Invalid limit price",
 				ErrorMessage: "Limit price must be greater than 0",
 			}, types.OrderRejected)
@@ -110,8 +104,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 	if me.eventStreamer != nil {
 		me.eventStreamer.Publish(context.Background(), &types.OrderPlacedEvent{
 			OrderID:         order.OrderId,
-			UserID:          order.UserId,
-			BotID:           order.BotId,
+			TraderID:        order.TraderId,
 			StockTicker:     order.StockTicker,
 			OrderType:       order.OrderType,
 			OrderSide:       order.OrderSide,
@@ -192,14 +185,12 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 			matches = append(matches, match)
 			if me.eventStreamer != nil {
 				me.eventStreamer.Publish(context.Background(), &types.TradeExecutedEvent{
-					TradeID:         uuid.NewString(),
 					StockTicker:     buyOrder.StockTicker,
 					BuyerOrderID:    buyOrder.OrderId,
 					SellerOrderID:   sellOrder.OrderId,
-					BuyerUserID:     buyOrder.UserId,
-					BuyerBotID:      buyOrder.BotId,
-					SellerUserID:    sellOrder.UserId,
-					SellerBotID:     sellOrder.BotId,
+					BuyerOrderType:  buyOrder.OrderType,
+					BuyerTraderID:   buyOrder.TraderId,
+					SellerTraderID:  sellOrder.TraderId,
 					Quantity:        matchQty,
 					PriceCents:      askPrice,
 					TotalValueCents: tradeCost,
@@ -220,8 +211,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 				if me.eventStreamer != nil {
 					_ = me.eventStreamer.Publish(context.Background(), &types.OrderFilledEvent{
 						OrderID:        sellOrder.OrderId,
-						UserID:         sellOrder.UserId,
-						BotID:          sellOrder.BotId,
+						TraderID:       sellOrder.TraderId,
 						Quantity:       originalSellQty,
 						FillPriceCents: askPrice,
 					}, types.OrderFilled)
@@ -232,8 +222,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 				if me.eventStreamer != nil {
 					_ = me.eventStreamer.Publish(context.Background(), &types.OrderPartiallyFilledEvent{
 						OrderID:           sellOrder.OrderId,
-						UserID:            sellOrder.UserId,
-						BotID:             sellOrder.BotId,
+						TraderID:          sellOrder.TraderId,
 						FilledQuantity:    matchQty,
 						RemainingQuantity: sellOrder.Quantity,
 						FillPriceCents:    askPrice,
@@ -248,8 +237,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 		if me.eventStreamer != nil {
 			_ = me.eventStreamer.Publish(context.Background(), &types.OrderFilledEvent{
 				OrderID:        buyOrder.OrderId,
-				UserID:         buyOrder.UserId,
-				BotID:          buyOrder.BotId,
+				TraderID:       buyOrder.TraderId,
 				Quantity:       originalBuyQty,
 				FillPriceCents: 0, // Client calculates from partial events
 			}, types.OrderFilled)
@@ -259,8 +247,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 		if me.eventStreamer != nil {
 			_ = me.eventStreamer.Publish(context.Background(), &types.OrderPartiallyFilledEvent{
 				OrderID:           buyOrder.OrderId,
-				UserID:            buyOrder.UserId,
-				BotID:             buyOrder.BotId,
+				TraderID:          buyOrder.TraderId,
 				FilledQuantity:    originalBuyQty - remainingQty,
 				RemainingQuantity: remainingQty,
 				FillPriceCents:    0, // Multiple fills at different prices
@@ -273,8 +260,10 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 		if me.eventStreamer != nil {
 			_ = me.eventStreamer.Publish(context.Background(), &types.OrderCancelledEvent{
 				OrderID:           buyOrder.OrderId,
-				UserID:            buyOrder.UserId,
-				BotID:             buyOrder.BotId,
+				TraderID:          buyOrder.TraderId,
+				OrderType:         buyOrder.OrderType,
+				OrderSide:         buyOrder.OrderSide,
+				StockTicker:       buyOrder.StockTicker,
 				RemainingQuantity: remainingQty,
 			}, types.OrderCancelled)
 		}
@@ -330,14 +319,12 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 			// Emit trade executed event
 			if me.eventStreamer != nil {
 				_ = me.eventStreamer.Publish(context.Background(), &types.TradeExecutedEvent{
-					TradeID:         uuid.NewString(),
 					StockTicker:     sellOrder.StockTicker,
 					BuyerOrderID:    buyOrder.OrderId,
 					SellerOrderID:   sellOrder.OrderId,
-					BuyerUserID:     buyOrder.UserId,
-					BuyerBotID:      buyOrder.BotId,
-					SellerUserID:    sellOrder.UserId,
-					SellerBotID:     sellOrder.BotId,
+					BuyerOrderType:  buyOrder.OrderType,
+					BuyerTraderID:   buyOrder.TraderId,
+					SellerTraderID:  sellOrder.TraderId,
 					Quantity:        matchQty,
 					PriceCents:      bidPrice,
 					TotalValueCents: bidPrice * matchQty,
@@ -354,8 +341,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 				if me.eventStreamer != nil {
 					_ = me.eventStreamer.Publish(context.Background(), &types.OrderFilledEvent{
 						OrderID:        buyOrder.OrderId,
-						UserID:         buyOrder.UserId,
-						BotID:          buyOrder.BotId,
+						TraderID:       buyOrder.TraderId,
 						Quantity:       originalBuyQty,
 						FillPriceCents: bidPrice,
 					}, types.OrderFilled)
@@ -366,8 +352,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 				if me.eventStreamer != nil {
 					_ = me.eventStreamer.Publish(context.Background(), &types.OrderPartiallyFilledEvent{
 						OrderID:           buyOrder.OrderId,
-						UserID:            buyOrder.UserId,
-						BotID:             buyOrder.BotId,
+						TraderID:          buyOrder.TraderId,
 						FilledQuantity:    matchQty,
 						RemainingQuantity: buyOrder.Quantity,
 						FillPriceCents:    bidPrice,
@@ -382,8 +367,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 		if me.eventStreamer != nil {
 			_ = me.eventStreamer.Publish(context.Background(), &types.OrderFilledEvent{
 				OrderID:        sellOrder.OrderId,
-				UserID:         sellOrder.UserId,
-				BotID:          sellOrder.BotId,
+				TraderID:       sellOrder.TraderId,
 				Quantity:       originalSellQty,
 				FillPriceCents: 0, // Client calculates from partial events
 			}, types.OrderFilled)
@@ -393,8 +377,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 		if me.eventStreamer != nil {
 			_ = me.eventStreamer.Publish(context.Background(), &types.OrderPartiallyFilledEvent{
 				OrderID:           sellOrder.OrderId,
-				UserID:            sellOrder.UserId,
-				BotID:             sellOrder.BotId,
+				TraderID:          sellOrder.TraderId,
 				FilledQuantity:    originalSellQty - remainingQty,
 				RemainingQuantity: remainingQty,
 				FillPriceCents:    0, // Multiple fills at different prices
@@ -407,8 +390,10 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 		if me.eventStreamer != nil {
 			_ = me.eventStreamer.Publish(context.Background(), &types.OrderCancelledEvent{
 				OrderID:           sellOrder.OrderId,
-				UserID:            sellOrder.UserId,
-				BotID:             sellOrder.BotId,
+				TraderID:          sellOrder.TraderId,
+				OrderType:         sellOrder.OrderType,
+				OrderSide:         sellOrder.OrderSide,
+				StockTicker:       sellOrder.StockTicker,
 				RemainingQuantity: remainingQty,
 			}, types.OrderCancelled)
 		}
@@ -457,8 +442,10 @@ func (me *MatchingEngine) CancelOrder(stock, orderId string, side types.OrderSid
 	if me.eventStreamer != nil {
 		_ = me.eventStreamer.Publish(context.Background(), &types.OrderCancelledEvent{
 			OrderID:           order.OrderId,
-			UserID:            order.UserId,
-			BotID:             order.BotId,
+			TraderID:          order.TraderId,
+			OrderType:         order.OrderType,
+			OrderSide:         order.OrderSide,
+			StockTicker:       order.StockTicker,
 			RemainingQuantity: order.Quantity,
 		}, types.OrderCancelled)
 	}

@@ -62,8 +62,7 @@ func (s *MatchingEngineService) PlaceOrder(ctx context.Context, req *pb.PlaceOrd
 
 	order := &types.Order{
 		OrderId:          orderID,
-		UserId:           req.UserId,
-		BotId:            req.BotId,
+		TraderId:         req.TraderId,
 		StockTicker:      req.StockTicker,
 		OrderType:        orderType,
 		OrderSide:        orderSide,

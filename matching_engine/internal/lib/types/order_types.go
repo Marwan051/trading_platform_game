@@ -26,8 +26,7 @@ const (
 // Order - The order itself
 type Order struct {
 	OrderId          string
-	UserId           string
-	BotId            int64
+	TraderId         int64
 	StockTicker      string
 	OrderType        OrderType
 	OrderSide        OrderSide
