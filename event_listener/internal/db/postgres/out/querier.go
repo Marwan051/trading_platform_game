@@ -11,23 +11,32 @@ import (
 )
 
 type Querier interface {
-	// For LIMIT BUY orders: release cash hold
-	// For ALL SELL orders: release share hold
-	HandleOrderCancelled(ctx context.Context, id pgtype.UUID) error
+	// Release cash hold for limit buy
+	HandleLimitBuyOrderCancelled(ctx context.Context, id pgtype.UUID) error
+	// Lock cash at limit price
+	HandleLimitBuyOrderPlaced(ctx context.Context, arg HandleLimitBuyOrderPlacedParams) error
+	// Get buyer's limit price for hold release calculation
+	// Release buyer's cash hold at limit price, refund price improvement
+	// Add shares to buyer's position
+	// Release seller's share hold
+	// Add cash to seller
+	// Update stock price
+	HandleLimitBuyTradeExecuted(ctx context.Context, arg HandleLimitBuyTradeExecutedParams) error
+	HandleMarketBuyOrderCancelled(ctx context.Context, id pgtype.UUID) error
+	HandleMarketBuyOrderPlaced(ctx context.Context, arg HandleMarketBuyOrderPlacedParams) error
+	// Deduct cash directly from buyer's balance (no hold exists)
+	// Add shares to buyer's position
+	// Release seller's share hold
+	// Add cash to seller
+	// Update stock price
+	HandleMarketBuyTradeExecuted(ctx context.Context, arg HandleMarketBuyTradeExecutedParams) error
 	HandleOrderFilled(ctx context.Context, id pgtype.UUID) error
 	HandleOrderPartiallyFilled(ctx context.Context, arg HandleOrderPartiallyFilledParams) error
-	// For LIMIT BUY orders: lock cash (market buys have no hold, deducted on trade)
-	// For ALL SELL orders: lock shares (both market and limit)
-	HandleOrderPlaced(ctx context.Context, arg HandleOrderPlacedParams) error
 	HandleOrderRejected(ctx context.Context, arg HandleOrderRejectedParams) error
-	// Look up buyer order type to know if cash is in hold or needs direct deduction
-	// LIMIT BUY: release hold at limit price, refund price improvement to balance
-	// MARKET BUY: deduct cash directly from balance (no hold exists)
-	// BUYER: Add shares to position
-	// SELLER: Release quantity_hold (shares were already in hold, now they're gone)
-	// SELLER: Add cash from sale
-	// Update stock price to reflect the latest trade price
-	HandleTradeExecuted(ctx context.Context, arg HandleTradeExecutedParams) error
+	// Release share hold for sell orders
+	HandleSellOrderCancelled(ctx context.Context, id pgtype.UUID) error
+	// Lock shares for sell
+	HandleSellOrderPlaced(ctx context.Context, arg HandleSellOrderPlacedParams) error
 }
 
 var _ Querier = (*Queries)(nil)

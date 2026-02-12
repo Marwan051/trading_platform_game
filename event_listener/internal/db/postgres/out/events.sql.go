@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const handleOrderCancelled = `-- name: HandleOrderCancelled :exec
+const handleLimitBuyOrderCancelled = `-- name: HandleLimitBuyOrderCancelled :exec
 WITH cancelled_order AS (
     UPDATE orders
     SET status = 'CANCELLED',
@@ -20,65 +20,370 @@ WITH cancelled_order AS (
     WHERE orders.id = $1
         AND status IN ('PENDING', 'PARTIAL')
     RETURNING id,
-        user_id,
-        bot_id,
-        order_type,
-        side,
+        trader_id,
         remaining_quantity,
-        limit_price_cents,
-        stock_ticker
+        limit_price_cents
 ),
-return_user_cash AS (
-    UPDATE user_profile
-    SET cash_balance_cents = user_profile.cash_balance_cents + (co.remaining_quantity * co.limit_price_cents),
-        cash_hold_cents = user_profile.cash_hold_cents - (co.remaining_quantity * co.limit_price_cents),
+return_trader_cash AS (
+    UPDATE traders
+    SET cash_balance_cents = traders.cash_balance_cents + (co.remaining_quantity * co.limit_price_cents),
+        cash_hold_cents = traders.cash_hold_cents - (co.remaining_quantity * co.limit_price_cents),
         updated_at = NOW()
     FROM cancelled_order co
-    WHERE user_profile.user_id = co.user_id
-        AND co.side = 'BUY'
-        AND co.order_type = 'LIMIT'
-        AND co.user_id IS NOT NULL
-),
-return_bot_cash AS (
-    UPDATE bots
-    SET cash_balance_cents = bots.cash_balance_cents + (co.remaining_quantity * co.limit_price_cents),
-        cash_hold_cents = bots.cash_hold_cents - (co.remaining_quantity * co.limit_price_cents),
-        updated_at = NOW()
-    FROM cancelled_order co
-    WHERE bots.id = co.bot_id
-        AND co.side = 'BUY'
-        AND co.order_type = 'LIMIT'
-        AND co.bot_id IS NOT NULL
-),
-return_user_shares AS (
-    UPDATE positions
-    SET quantity = positions.quantity + co.remaining_quantity,
-        quantity_hold = positions.quantity_hold - co.remaining_quantity,
-        updated_at = NOW()
-    FROM cancelled_order co
-    WHERE positions.user_id = co.user_id
-        AND positions.stock_ticker = co.stock_ticker
-        AND co.side = 'SELL'
-        AND co.user_id IS NOT NULL
-),
-return_bot_shares AS (
-    UPDATE positions
-    SET quantity = positions.quantity + co.remaining_quantity,
-        quantity_hold = positions.quantity_hold - co.remaining_quantity,
-        updated_at = NOW()
-    FROM cancelled_order co
-    WHERE positions.bot_id = co.bot_id
-        AND positions.stock_ticker = co.stock_ticker
-        AND co.side = 'SELL'
-        AND co.bot_id IS NOT NULL
+    WHERE traders.id = co.trader_id
 )
 SELECT 1
 `
 
-// For LIMIT BUY orders: release cash hold
-// For ALL SELL orders: release share hold
-func (q *Queries) HandleOrderCancelled(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, handleOrderCancelled, id)
+// Release cash hold for limit buy
+func (q *Queries) HandleLimitBuyOrderCancelled(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, handleLimitBuyOrderCancelled, id)
+	return err
+}
+
+const handleLimitBuyOrderPlaced = `-- name: HandleLimitBuyOrderPlaced :exec
+WITH inserted_order AS (
+    INSERT INTO orders (
+            id,
+            trader_id,
+            stock_ticker,
+            order_type,
+            side,
+            quantity,
+            remaining_quantity,
+            limit_price_cents,
+            status
+        )
+    VALUES (
+            $1,
+            $2,
+            $3,
+            'LIMIT',
+            'BUY',
+            $4,
+            $4,
+            $5,
+            'PENDING'
+        )
+    RETURNING id,
+        trader_id,
+        quantity,
+        limit_price_cents
+),
+lock_trader_cash AS (
+    UPDATE traders
+    SET cash_balance_cents = traders.cash_balance_cents - (io.quantity * io.limit_price_cents),
+        cash_hold_cents = traders.cash_hold_cents + (io.quantity * io.limit_price_cents),
+        updated_at = NOW()
+    FROM inserted_order io
+    WHERE traders.id = io.trader_id
+)
+SELECT 1
+`
+
+type HandleLimitBuyOrderPlacedParams struct {
+	ID              pgtype.UUID `json:"id"`
+	TraderID        int64       `json:"trader_id"`
+	StockTicker     string      `json:"stock_ticker"`
+	Quantity        int64       `json:"quantity"`
+	LimitPriceCents pgtype.Int8 `json:"limit_price_cents"`
+}
+
+// Lock cash at limit price
+func (q *Queries) HandleLimitBuyOrderPlaced(ctx context.Context, arg HandleLimitBuyOrderPlacedParams) error {
+	_, err := q.db.Exec(ctx, handleLimitBuyOrderPlaced,
+		arg.ID,
+		arg.TraderID,
+		arg.StockTicker,
+		arg.Quantity,
+		arg.LimitPriceCents,
+	)
+	return err
+}
+
+const handleLimitBuyTradeExecuted = `-- name: HandleLimitBuyTradeExecuted :exec
+WITH trade_info AS (
+    INSERT INTO trades (
+            stock_ticker,
+            buyer_order_id,
+            seller_order_id,
+            buyer_trader_id,
+            seller_trader_id,
+            quantity,
+            price_cents,
+            total_value_cents
+        )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING buyer_order_id,
+        seller_order_id,
+        buyer_trader_id,
+        seller_trader_id,
+        stock_ticker,
+        quantity,
+        price_cents,
+        total_value_cents
+),
+buyer_order AS (
+    SELECT o.limit_price_cents
+    FROM orders o
+        INNER JOIN trade_info ti ON o.id = ti.buyer_order_id
+),
+release_buyer_cash_hold AS (
+    UPDATE traders
+    SET cash_hold_cents = traders.cash_hold_cents - (ti.quantity * bo.limit_price_cents),
+        cash_balance_cents = traders.cash_balance_cents + (
+            (ti.quantity * bo.limit_price_cents) - ti.total_value_cents
+        ),
+        updated_at = NOW()
+    FROM trade_info ti
+        CROSS JOIN buyer_order bo
+    WHERE traders.id = ti.buyer_trader_id
+),
+buyer_add_position AS (
+    INSERT INTO positions (
+            trader_id,
+            stock_ticker,
+            quantity,
+            average_cost_cents,
+            total_cost_cents
+        )
+    SELECT ti.buyer_trader_id,
+        ti.stock_ticker,
+        ti.quantity,
+        ti.price_cents,
+        ti.total_value_cents
+    FROM trade_info ti ON CONFLICT (trader_id, stock_ticker) DO
+    UPDATE
+    SET quantity = positions.quantity + EXCLUDED.quantity,
+        total_cost_cents = positions.total_cost_cents + EXCLUDED.total_cost_cents,
+        average_cost_cents = (
+            positions.total_cost_cents + EXCLUDED.total_cost_cents
+        ) / (positions.quantity + EXCLUDED.quantity),
+        updated_at = NOW()
+),
+seller_release_hold AS (
+    UPDATE positions
+    SET quantity_hold = positions.quantity_hold - ti.quantity,
+        total_cost_cents = GREATEST(
+            0,
+            positions.total_cost_cents - (ti.quantity * positions.average_cost_cents)
+        ),
+        updated_at = NOW()
+    FROM trade_info ti
+    WHERE positions.trader_id = ti.seller_trader_id
+        AND positions.stock_ticker = ti.stock_ticker
+),
+seller_add_cash AS (
+    UPDATE traders
+    SET cash_balance_cents = traders.cash_balance_cents + ti.total_value_cents,
+        updated_at = NOW()
+    FROM trade_info ti
+    WHERE traders.id = ti.seller_trader_id
+),
+update_stock_price AS (
+    UPDATE stocks
+    SET current_price_cents = ti.price_cents,
+        updated_at = NOW()
+    FROM trade_info ti
+    WHERE stocks.ticker = ti.stock_ticker
+)
+SELECT 1
+`
+
+type HandleLimitBuyTradeExecutedParams struct {
+	StockTicker     string      `json:"stock_ticker"`
+	BuyerOrderID    pgtype.UUID `json:"buyer_order_id"`
+	SellerOrderID   pgtype.UUID `json:"seller_order_id"`
+	BuyerTraderID   int64       `json:"buyer_trader_id"`
+	SellerTraderID  int64       `json:"seller_trader_id"`
+	Quantity        int64       `json:"quantity"`
+	PriceCents      int64       `json:"price_cents"`
+	TotalValueCents int64       `json:"total_value_cents"`
+}
+
+// Get buyer's limit price for hold release calculation
+// Release buyer's cash hold at limit price, refund price improvement
+// Add shares to buyer's position
+// Release seller's share hold
+// Add cash to seller
+// Update stock price
+func (q *Queries) HandleLimitBuyTradeExecuted(ctx context.Context, arg HandleLimitBuyTradeExecutedParams) error {
+	_, err := q.db.Exec(ctx, handleLimitBuyTradeExecuted,
+		arg.StockTicker,
+		arg.BuyerOrderID,
+		arg.SellerOrderID,
+		arg.BuyerTraderID,
+		arg.SellerTraderID,
+		arg.Quantity,
+		arg.PriceCents,
+		arg.TotalValueCents,
+	)
+	return err
+}
+
+const handleMarketBuyOrderCancelled = `-- name: HandleMarketBuyOrderCancelled :exec
+UPDATE orders
+SET status = 'CANCELLED',
+    cancelled_at = NOW(),
+    updated_at = NOW()
+WHERE orders.id = $1
+    AND status IN ('PENDING', 'PARTIAL')
+`
+
+func (q *Queries) HandleMarketBuyOrderCancelled(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, handleMarketBuyOrderCancelled, id)
+	return err
+}
+
+const handleMarketBuyOrderPlaced = `-- name: HandleMarketBuyOrderPlaced :exec
+INSERT INTO orders (
+        id,
+        trader_id,
+        stock_ticker,
+        order_type,
+        side,
+        quantity,
+        remaining_quantity,
+        limit_price_cents,
+        status
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        'MARKET',
+        'BUY',
+        $4,
+        $4,
+        NULL,
+        'PENDING'
+    )
+`
+
+type HandleMarketBuyOrderPlacedParams struct {
+	ID          pgtype.UUID `json:"id"`
+	TraderID    int64       `json:"trader_id"`
+	StockTicker string      `json:"stock_ticker"`
+	Quantity    int64       `json:"quantity"`
+}
+
+func (q *Queries) HandleMarketBuyOrderPlaced(ctx context.Context, arg HandleMarketBuyOrderPlacedParams) error {
+	_, err := q.db.Exec(ctx, handleMarketBuyOrderPlaced,
+		arg.ID,
+		arg.TraderID,
+		arg.StockTicker,
+		arg.Quantity,
+	)
+	return err
+}
+
+const handleMarketBuyTradeExecuted = `-- name: HandleMarketBuyTradeExecuted :exec
+WITH trade_info AS (
+    INSERT INTO trades (
+            stock_ticker,
+            buyer_order_id,
+            seller_order_id,
+            buyer_trader_id,
+            seller_trader_id,
+            quantity,
+            price_cents,
+            total_value_cents
+        )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING buyer_order_id,
+        seller_order_id,
+        buyer_trader_id,
+        seller_trader_id,
+        stock_ticker,
+        quantity,
+        price_cents,
+        total_value_cents
+),
+deduct_buyer_cash AS (
+    UPDATE traders
+    SET cash_balance_cents = traders.cash_balance_cents - ti.total_value_cents,
+        updated_at = NOW()
+    FROM trade_info ti
+    WHERE traders.id = ti.buyer_trader_id
+),
+buyer_add_position AS (
+    INSERT INTO positions (
+            trader_id,
+            stock_ticker,
+            quantity,
+            average_cost_cents,
+            total_cost_cents
+        )
+    SELECT ti.buyer_trader_id,
+        ti.stock_ticker,
+        ti.quantity,
+        ti.price_cents,
+        ti.total_value_cents
+    FROM trade_info ti ON CONFLICT (trader_id, stock_ticker) DO
+    UPDATE
+    SET quantity = positions.quantity + EXCLUDED.quantity,
+        total_cost_cents = positions.total_cost_cents + EXCLUDED.total_cost_cents,
+        average_cost_cents = (
+            positions.total_cost_cents + EXCLUDED.total_cost_cents
+        ) / (positions.quantity + EXCLUDED.quantity),
+        updated_at = NOW()
+),
+seller_release_hold AS (
+    UPDATE positions
+    SET quantity_hold = positions.quantity_hold - ti.quantity,
+        total_cost_cents = GREATEST(
+            0,
+            positions.total_cost_cents - (ti.quantity * positions.average_cost_cents)
+        ),
+        updated_at = NOW()
+    FROM trade_info ti
+    WHERE positions.trader_id = ti.seller_trader_id
+        AND positions.stock_ticker = ti.stock_ticker
+),
+seller_add_cash AS (
+    UPDATE traders
+    SET cash_balance_cents = traders.cash_balance_cents + ti.total_value_cents,
+        updated_at = NOW()
+    FROM trade_info ti
+    WHERE traders.id = ti.seller_trader_id
+),
+update_stock_price AS (
+    UPDATE stocks
+    SET current_price_cents = ti.price_cents,
+        updated_at = NOW()
+    FROM trade_info ti
+    WHERE stocks.ticker = ti.stock_ticker
+)
+SELECT 1
+`
+
+type HandleMarketBuyTradeExecutedParams struct {
+	StockTicker     string      `json:"stock_ticker"`
+	BuyerOrderID    pgtype.UUID `json:"buyer_order_id"`
+	SellerOrderID   pgtype.UUID `json:"seller_order_id"`
+	BuyerTraderID   int64       `json:"buyer_trader_id"`
+	SellerTraderID  int64       `json:"seller_trader_id"`
+	Quantity        int64       `json:"quantity"`
+	PriceCents      int64       `json:"price_cents"`
+	TotalValueCents int64       `json:"total_value_cents"`
+}
+
+// Deduct cash directly from buyer's balance (no hold exists)
+// Add shares to buyer's position
+// Release seller's share hold
+// Add cash to seller
+// Update stock price
+func (q *Queries) HandleMarketBuyTradeExecuted(ctx context.Context, arg HandleMarketBuyTradeExecutedParams) error {
+	_, err := q.db.Exec(ctx, handleMarketBuyTradeExecuted,
+		arg.StockTicker,
+		arg.BuyerOrderID,
+		arg.SellerOrderID,
+		arg.BuyerTraderID,
+		arg.SellerTraderID,
+		arg.Quantity,
+		arg.PriceCents,
+		arg.TotalValueCents,
+	)
 	return err
 }
 
@@ -116,12 +421,61 @@ func (q *Queries) HandleOrderPartiallyFilled(ctx context.Context, arg HandleOrde
 	return err
 }
 
-const handleOrderPlaced = `-- name: HandleOrderPlaced :exec
+const handleOrderRejected = `-- name: HandleOrderRejected :exec
+INSERT INTO orders (
+        id,
+        trader_id,
+        status
+    )
+VALUES ($1, $2, 'REJECTED')
+`
+
+type HandleOrderRejectedParams struct {
+	ID       pgtype.UUID `json:"id"`
+	TraderID int64       `json:"trader_id"`
+}
+
+func (q *Queries) HandleOrderRejected(ctx context.Context, arg HandleOrderRejectedParams) error {
+	_, err := q.db.Exec(ctx, handleOrderRejected, arg.ID, arg.TraderID)
+	return err
+}
+
+const handleSellOrderCancelled = `-- name: HandleSellOrderCancelled :exec
+WITH cancelled_order AS (
+    UPDATE orders
+    SET status = 'CANCELLED',
+        cancelled_at = NOW(),
+        updated_at = NOW()
+    WHERE orders.id = $1
+        AND status IN ('PENDING', 'PARTIAL')
+    RETURNING id,
+        trader_id,
+        stock_ticker,
+        remaining_quantity
+),
+return_trader_shares AS (
+    UPDATE positions
+    SET quantity = positions.quantity + co.remaining_quantity,
+        quantity_hold = positions.quantity_hold - co.remaining_quantity,
+        updated_at = NOW()
+    FROM cancelled_order co
+    WHERE positions.trader_id = co.trader_id
+        AND positions.stock_ticker = co.stock_ticker
+)
+SELECT 1
+`
+
+// Release share hold for sell orders
+func (q *Queries) HandleSellOrderCancelled(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, handleSellOrderCancelled, id)
+	return err
+}
+
+const handleSellOrderPlaced = `-- name: HandleSellOrderPlaced :exec
 WITH inserted_order AS (
     INSERT INTO orders (
             id,
-            user_id,
-            bot_id,
+            trader_id,
             stock_ticker,
             order_type,
             side,
@@ -130,324 +484,42 @@ WITH inserted_order AS (
             limit_price_cents,
             status
         )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, 'PENDING')
+    VALUES ($1, $2, $3, $4, 'SELL', $5, $5, $6, 'PENDING')
     RETURNING id,
-        user_id,
-        bot_id,
-        order_type,
-        side,
-        quantity,
-        limit_price_cents,
-        stock_ticker
+        trader_id,
+        stock_ticker,
+        quantity
 ),
-lock_user_cash AS (
-    UPDATE user_profile
-    SET cash_balance_cents = user_profile.cash_balance_cents - (io.quantity * io.limit_price_cents),
-        cash_hold_cents = user_profile.cash_hold_cents + (io.quantity * io.limit_price_cents),
-        updated_at = NOW()
-    FROM inserted_order io
-    WHERE user_profile.user_id = io.user_id
-        AND io.side = 'BUY'
-        AND io.order_type = 'LIMIT'
-        AND io.user_id IS NOT NULL
-),
-lock_bot_cash AS (
-    UPDATE bots
-    SET cash_balance_cents = bots.cash_balance_cents - (io.quantity * io.limit_price_cents),
-        cash_hold_cents = bots.cash_hold_cents + (io.quantity * io.limit_price_cents),
-        updated_at = NOW()
-    FROM inserted_order io
-    WHERE bots.id = io.bot_id
-        AND io.side = 'BUY'
-        AND io.order_type = 'LIMIT'
-        AND io.bot_id IS NOT NULL
-),
-lock_user_shares AS (
+lock_trader_shares AS (
     UPDATE positions
     SET quantity = positions.quantity - io.quantity,
         quantity_hold = positions.quantity_hold + io.quantity,
         updated_at = NOW()
     FROM inserted_order io
-    WHERE positions.user_id = io.user_id
+    WHERE positions.trader_id = io.trader_id
         AND positions.stock_ticker = io.stock_ticker
-        AND io.side = 'SELL'
-        AND io.user_id IS NOT NULL
-),
-lock_bot_shares AS (
-    UPDATE positions
-    SET quantity = positions.quantity - io.quantity,
-        quantity_hold = positions.quantity_hold + io.quantity,
-        updated_at = NOW()
-    FROM inserted_order io
-    WHERE positions.bot_id = io.bot_id
-        AND positions.stock_ticker = io.stock_ticker
-        AND io.side = 'SELL'
-        AND io.bot_id IS NOT NULL
 )
 SELECT 1
 `
 
-type HandleOrderPlacedParams struct {
+type HandleSellOrderPlacedParams struct {
 	ID              pgtype.UUID `json:"id"`
-	UserID          pgtype.Text `json:"user_id"`
-	BotID           pgtype.Int8 `json:"bot_id"`
+	TraderID        int64       `json:"trader_id"`
 	StockTicker     string      `json:"stock_ticker"`
 	OrderType       string      `json:"order_type"`
-	Side            string      `json:"side"`
 	Quantity        int64       `json:"quantity"`
 	LimitPriceCents pgtype.Int8 `json:"limit_price_cents"`
 }
 
-// For LIMIT BUY orders: lock cash (market buys have no hold, deducted on trade)
-// For ALL SELL orders: lock shares (both market and limit)
-func (q *Queries) HandleOrderPlaced(ctx context.Context, arg HandleOrderPlacedParams) error {
-	_, err := q.db.Exec(ctx, handleOrderPlaced,
+// Lock shares for sell
+func (q *Queries) HandleSellOrderPlaced(ctx context.Context, arg HandleSellOrderPlacedParams) error {
+	_, err := q.db.Exec(ctx, handleSellOrderPlaced,
 		arg.ID,
-		arg.UserID,
-		arg.BotID,
+		arg.TraderID,
 		arg.StockTicker,
 		arg.OrderType,
-		arg.Side,
 		arg.Quantity,
 		arg.LimitPriceCents,
-	)
-	return err
-}
-
-const handleOrderRejected = `-- name: HandleOrderRejected :exec
-INSERT INTO orders (
-        id,
-        user_id,
-        bot_id,
-        status
-    )
-VALUES ($1, $2, $3, 'REJECTED')
-`
-
-type HandleOrderRejectedParams struct {
-	ID     pgtype.UUID `json:"id"`
-	UserID pgtype.Text `json:"user_id"`
-	BotID  pgtype.Int8 `json:"bot_id"`
-}
-
-func (q *Queries) HandleOrderRejected(ctx context.Context, arg HandleOrderRejectedParams) error {
-	_, err := q.db.Exec(ctx, handleOrderRejected, arg.ID, arg.UserID, arg.BotID)
-	return err
-}
-
-const handleTradeExecuted = `-- name: HandleTradeExecuted :exec
-WITH trade_info AS (
-    INSERT INTO trades (
-            id,
-            stock_ticker,
-            buyer_order_id,
-            seller_order_id,
-            buyer_user_id,
-            buyer_bot_id,
-            seller_user_id,
-            seller_bot_id,
-            quantity,
-            price_cents,
-            total_value_cents
-        )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING buyer_order_id,
-        seller_order_id,
-        buyer_user_id,
-        buyer_bot_id,
-        seller_user_id,
-        seller_bot_id,
-        stock_ticker,
-        quantity,
-        price_cents,
-        total_value_cents
-),
-buyer_order AS (
-    SELECT o.order_type,
-        o.limit_price_cents
-    FROM orders o
-        INNER JOIN trade_info ti ON o.id = ti.buyer_order_id
-),
-release_buyer_user_limit_hold AS (
-    UPDATE user_profile
-    SET cash_hold_cents = user_profile.cash_hold_cents - (ti.quantity * bo.limit_price_cents),
-        cash_balance_cents = user_profile.cash_balance_cents + (
-            (ti.quantity * bo.limit_price_cents) - ti.total_value_cents
-        ),
-        updated_at = NOW()
-    FROM trade_info ti
-        CROSS JOIN buyer_order bo
-    WHERE user_profile.user_id = ti.buyer_user_id
-        AND ti.buyer_user_id IS NOT NULL
-        AND bo.order_type = 'LIMIT'
-),
-release_buyer_bot_limit_hold AS (
-    UPDATE bots
-    SET cash_hold_cents = bots.cash_hold_cents - (ti.quantity * bo.limit_price_cents),
-        cash_balance_cents = bots.cash_balance_cents + (
-            (ti.quantity * bo.limit_price_cents) - ti.total_value_cents
-        ),
-        updated_at = NOW()
-    FROM trade_info ti
-        CROSS JOIN buyer_order bo
-    WHERE bots.id = ti.buyer_bot_id
-        AND ti.buyer_bot_id IS NOT NULL
-        AND bo.order_type = 'LIMIT'
-),
-deduct_buyer_user_market_cash AS (
-    UPDATE user_profile
-    SET cash_balance_cents = user_profile.cash_balance_cents - ti.total_value_cents,
-        updated_at = NOW()
-    FROM trade_info ti
-        CROSS JOIN buyer_order bo
-    WHERE user_profile.user_id = ti.buyer_user_id
-        AND ti.buyer_user_id IS NOT NULL
-        AND bo.order_type = 'MARKET'
-),
-deduct_buyer_bot_market_cash AS (
-    UPDATE bots
-    SET cash_balance_cents = bots.cash_balance_cents - ti.total_value_cents,
-        updated_at = NOW()
-    FROM trade_info ti
-        CROSS JOIN buyer_order bo
-    WHERE bots.id = ti.buyer_bot_id
-        AND ti.buyer_bot_id IS NOT NULL
-        AND bo.order_type = 'MARKET'
-),
-buyer_user_add_position AS (
-    INSERT INTO positions (
-            user_id,
-            stock_ticker,
-            quantity,
-            average_cost_cents,
-            total_cost_cents
-        )
-    SELECT ti.buyer_user_id,
-        ti.stock_ticker,
-        ti.quantity,
-        ti.price_cents,
-        ti.total_value_cents
-    FROM trade_info ti
-    WHERE ti.buyer_user_id IS NOT NULL ON CONFLICT (user_id, stock_ticker)
-    WHERE user_id IS NOT NULL DO
-    UPDATE
-    SET quantity = positions.quantity + EXCLUDED.quantity,
-        total_cost_cents = positions.total_cost_cents + EXCLUDED.total_cost_cents,
-        average_cost_cents = (
-            positions.total_cost_cents + EXCLUDED.total_cost_cents
-        ) / (positions.quantity + EXCLUDED.quantity),
-        updated_at = NOW()
-),
-buyer_bot_add_position AS (
-    INSERT INTO positions (
-            bot_id,
-            stock_ticker,
-            quantity,
-            average_cost_cents,
-            total_cost_cents
-        )
-    SELECT ti.buyer_bot_id,
-        ti.stock_ticker,
-        ti.quantity,
-        ti.price_cents,
-        ti.total_value_cents
-    FROM trade_info ti
-    WHERE ti.buyer_bot_id IS NOT NULL ON CONFLICT (bot_id, stock_ticker)
-    WHERE bot_id IS NOT NULL DO
-    UPDATE
-    SET quantity = positions.quantity + EXCLUDED.quantity,
-        total_cost_cents = positions.total_cost_cents + EXCLUDED.total_cost_cents,
-        average_cost_cents = (
-            positions.total_cost_cents + EXCLUDED.total_cost_cents
-        ) / (positions.quantity + EXCLUDED.quantity),
-        updated_at = NOW()
-),
-seller_user_release_hold AS (
-    UPDATE positions
-    SET quantity_hold = positions.quantity_hold - ti.quantity,
-        total_cost_cents = GREATEST(
-            0,
-            positions.total_cost_cents - (ti.quantity * positions.average_cost_cents)
-        ),
-        updated_at = NOW()
-    FROM trade_info ti
-    WHERE positions.user_id = ti.seller_user_id
-        AND positions.stock_ticker = ti.stock_ticker
-        AND ti.seller_user_id IS NOT NULL
-),
-seller_bot_release_hold AS (
-    UPDATE positions
-    SET quantity_hold = positions.quantity_hold - ti.quantity,
-        total_cost_cents = GREATEST(
-            0,
-            positions.total_cost_cents - (ti.quantity * positions.average_cost_cents)
-        ),
-        updated_at = NOW()
-    FROM trade_info ti
-    WHERE positions.bot_id = ti.seller_bot_id
-        AND positions.stock_ticker = ti.stock_ticker
-        AND ti.seller_bot_id IS NOT NULL
-),
-seller_user_add_cash AS (
-    UPDATE user_profile
-    SET cash_balance_cents = user_profile.cash_balance_cents + ti.total_value_cents,
-        updated_at = NOW()
-    FROM trade_info ti
-    WHERE user_profile.user_id = ti.seller_user_id
-        AND ti.seller_user_id IS NOT NULL
-),
-seller_bot_add_cash AS (
-    UPDATE bots
-    SET cash_balance_cents = bots.cash_balance_cents + ti.total_value_cents,
-        updated_at = NOW()
-    FROM trade_info ti
-    WHERE bots.id = ti.seller_bot_id
-        AND ti.seller_bot_id IS NOT NULL
-),
-update_stock_price AS (
-    UPDATE stocks
-    SET current_price_cents = ti.price_cents,
-        updated_at = NOW()
-    FROM trade_info ti
-    WHERE stocks.ticker = ti.stock_ticker
-)
-SELECT 1
-`
-
-type HandleTradeExecutedParams struct {
-	ID              pgtype.UUID `json:"id"`
-	StockTicker     string      `json:"stock_ticker"`
-	BuyerOrderID    pgtype.UUID `json:"buyer_order_id"`
-	SellerOrderID   pgtype.UUID `json:"seller_order_id"`
-	BuyerUserID     pgtype.Text `json:"buyer_user_id"`
-	BuyerBotID      pgtype.Int8 `json:"buyer_bot_id"`
-	SellerUserID    pgtype.Text `json:"seller_user_id"`
-	SellerBotID     pgtype.Int8 `json:"seller_bot_id"`
-	Quantity        int64       `json:"quantity"`
-	PriceCents      int64       `json:"price_cents"`
-	TotalValueCents int64       `json:"total_value_cents"`
-}
-
-// Look up buyer order type to know if cash is in hold or needs direct deduction
-// LIMIT BUY: release hold at limit price, refund price improvement to balance
-// MARKET BUY: deduct cash directly from balance (no hold exists)
-// BUYER: Add shares to position
-// SELLER: Release quantity_hold (shares were already in hold, now they're gone)
-// SELLER: Add cash from sale
-// Update stock price to reflect the latest trade price
-func (q *Queries) HandleTradeExecuted(ctx context.Context, arg HandleTradeExecutedParams) error {
-	_, err := q.db.Exec(ctx, handleTradeExecuted,
-		arg.ID,
-		arg.StockTicker,
-		arg.BuyerOrderID,
-		arg.SellerOrderID,
-		arg.BuyerUserID,
-		arg.BuyerBotID,
-		arg.SellerUserID,
-		arg.SellerBotID,
-		arg.Quantity,
-		arg.PriceCents,
-		arg.TotalValueCents,
 	)
 	return err
 }

@@ -42,27 +42,12 @@ func orderSideToString(s streamtypes.OrderSide) string {
 	}
 }
 
-func userIDToPgType(userID string) pgtype.Text {
-	if userID == "" {
-		return pgtype.Text{Valid: false}
-	}
-
-	return pgtype.Text{String: userID, Valid: true}
-}
-
 func orderIDToUUID(orderID string) (pgtype.UUID, error) {
 	orderUUID, err := uuid.Parse(orderID)
 	if err != nil {
 		return pgtype.UUID{}, fmt.Errorf("could not parse order UUID: %w", err)
 	}
 	return pgtype.UUID{Bytes: orderUUID, Valid: true}, nil
-}
-
-func botIDToPgType(botID int64) pgtype.Int8 {
-	if botID == 0 {
-		return pgtype.Int8{Valid: false}
-	}
-	return pgtype.Int8{Int64: botID, Valid: true}
 }
 
 func (p *PostgresDB) InsertEvent(ctx context.Context, eventID string, timestamp time.Time, eventType streamtypes.EventType, payload streamtypes.EventPayload) error {
@@ -76,19 +61,41 @@ func (p *PostgresDB) InsertEvent(ctx context.Context, eventID string, timestamp 
 		if err != nil {
 			return err
 		}
-		orderPlacedParams := db.HandleOrderPlacedParams{
-			ID:              orderUUID,
-			UserID:          userIDToPgType(ev.UserID),
-			BotID:           botIDToPgType(ev.BotID),
-			StockTicker:     ev.StockTicker,
-			OrderType:       orderTypeToString(ev.OrderType),
-			Side:            orderSideToString(ev.OrderSide),
-			Quantity:        ev.Quantity,
-			LimitPriceCents: pgtype.Int8{Int64: ev.LimitPriceCents, Valid: true},
-		}
 
-		if err = p.db.HandleOrderPlaced(ctx, orderPlacedParams); err != nil {
-			return fmt.Errorf("failed to handle order placed: %w", err)
+		// Route to appropriate handler based on order type and side
+		if ev.OrderType == streamtypes.LimitOrder && ev.OrderSide == streamtypes.Buy {
+			params := db.HandleLimitBuyOrderPlacedParams{
+				ID:              orderUUID,
+				TraderID:        ev.TraderID,
+				StockTicker:     ev.StockTicker,
+				Quantity:        ev.Quantity,
+				LimitPriceCents: pgtype.Int8{Int64: ev.LimitPriceCents, Valid: true},
+			}
+			if err = p.db.HandleLimitBuyOrderPlaced(ctx, params); err != nil {
+				return fmt.Errorf("failed to handle limit buy order placed: %w", err)
+			}
+		} else if ev.OrderType == streamtypes.MarketOrder && ev.OrderSide == streamtypes.Buy {
+			params := db.HandleMarketBuyOrderPlacedParams{
+				ID:          orderUUID,
+				TraderID:    ev.TraderID,
+				StockTicker: ev.StockTicker,
+				Quantity:    ev.Quantity,
+			}
+			if err = p.db.HandleMarketBuyOrderPlaced(ctx, params); err != nil {
+				return fmt.Errorf("failed to handle market buy order placed: %w", err)
+			}
+		} else if ev.OrderSide == streamtypes.Sell {
+			params := db.HandleSellOrderPlacedParams{
+				ID:              orderUUID,
+				TraderID:        ev.TraderID,
+				StockTicker:     ev.StockTicker,
+				OrderType:       orderTypeToString(ev.OrderType),
+				Quantity:        ev.Quantity,
+				LimitPriceCents: pgtype.Int8{Int64: ev.LimitPriceCents, Valid: ev.OrderType == streamtypes.LimitOrder},
+			}
+			if err = p.db.HandleSellOrderPlaced(ctx, params); err != nil {
+				return fmt.Errorf("failed to handle sell order placed: %w", err)
+			}
 		}
 		return nil
 
@@ -101,8 +108,20 @@ func (p *PostgresDB) InsertEvent(ctx context.Context, eventID string, timestamp 
 		if err != nil {
 			return err
 		}
-		if err = p.db.HandleOrderCancelled(ctx, orderUUID); err != nil {
-			return fmt.Errorf("failed to handle order cancelled: %w", err)
+
+		// Route to appropriate handler based on order type and side
+		if ev.OrderType == streamtypes.LimitOrder && ev.OrderSide == streamtypes.Buy {
+			if err = p.db.HandleLimitBuyOrderCancelled(ctx, orderUUID); err != nil {
+				return fmt.Errorf("failed to handle limit buy order cancelled: %w", err)
+			}
+		} else if ev.OrderType == streamtypes.MarketOrder && ev.OrderSide == streamtypes.Buy {
+			if err = p.db.HandleMarketBuyOrderCancelled(ctx, orderUUID); err != nil {
+				return fmt.Errorf("failed to handle market buy order cancelled: %w", err)
+			}
+		} else if ev.OrderSide == streamtypes.Sell {
+			if err = p.db.HandleSellOrderCancelled(ctx, orderUUID); err != nil {
+				return fmt.Errorf("failed to handle sell order cancelled: %w", err)
+			}
 		}
 		return nil
 
@@ -148,9 +167,8 @@ func (p *PostgresDB) InsertEvent(ctx context.Context, eventID string, timestamp 
 			return err
 		}
 		params := db.HandleOrderRejectedParams{
-			ID:     orderUUID,
-			UserID: userIDToPgType(ev.UserID),
-			BotID:  botIDToPgType(ev.BotID),
+			ID:       orderUUID,
+			TraderID: ev.TraderID,
 		}
 		if err = p.db.HandleOrderRejected(ctx, params); err != nil {
 			return fmt.Errorf("failed to handle order rejected: %w", err)
@@ -162,10 +180,6 @@ func (p *PostgresDB) InsertEvent(ctx context.Context, eventID string, timestamp 
 		if !ok {
 			return errors.New("invalid payload type for TradeExecuted event")
 		}
-		tradeUUID, err := orderIDToUUID(ev.TradeID)
-		if err != nil {
-			return err
-		}
 		buyerOrderUUID, err := orderIDToUUID(ev.BuyerOrderID)
 		if err != nil {
 			return err
@@ -175,21 +189,37 @@ func (p *PostgresDB) InsertEvent(ctx context.Context, eventID string, timestamp 
 			return err
 		}
 
-		params := db.HandleTradeExecutedParams{
-			ID:              tradeUUID,
+		params := db.HandleLimitBuyTradeExecutedParams{
 			StockTicker:     ev.StockTicker,
 			BuyerOrderID:    buyerOrderUUID,
 			SellerOrderID:   sellerOrderUUID,
-			BuyerUserID:     userIDToPgType(ev.BuyerUserID),
-			BuyerBotID:      botIDToPgType(ev.BuyerBotID),
-			SellerUserID:    userIDToPgType(ev.SellerUserID),
-			SellerBotID:     botIDToPgType(ev.SellerBotID),
+			BuyerTraderID:   ev.BuyerTraderID,
+			SellerTraderID:  ev.SellerTraderID,
 			Quantity:        ev.Quantity,
 			PriceCents:      ev.PriceCents,
 			TotalValueCents: ev.TotalValueCents,
 		}
-		if err = p.db.HandleTradeExecuted(ctx, params); err != nil {
-			return fmt.Errorf("failed to handle trade executed: %w", err)
+
+		// Route to appropriate handler based on buyer's order type
+		if ev.BuyerOrderType == streamtypes.LimitOrder {
+			if err = p.db.HandleLimitBuyTradeExecuted(ctx, params); err != nil {
+				return fmt.Errorf("failed to handle limit buy trade executed: %w", err)
+			}
+		} else {
+			// MarketOrder - need to convert params type
+			marketParams := db.HandleMarketBuyTradeExecutedParams{
+				StockTicker:     params.StockTicker,
+				BuyerOrderID:    params.BuyerOrderID,
+				SellerOrderID:   params.SellerOrderID,
+				BuyerTraderID:   params.BuyerTraderID,
+				SellerTraderID:  params.SellerTraderID,
+				Quantity:        params.Quantity,
+				PriceCents:      params.PriceCents,
+				TotalValueCents: params.TotalValueCents,
+			}
+			if err = p.db.HandleMarketBuyTradeExecuted(ctx, marketParams); err != nil {
+				return fmt.Errorf("failed to handle market buy trade executed: %w", err)
+			}
 		}
 		return nil
 	}

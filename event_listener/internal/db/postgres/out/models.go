@@ -8,25 +8,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Bot struct {
-	ID                       int64              `json:"id"`
-	OwnerUserID              pgtype.Text        `json:"owner_user_id"`
-	BotName                  string             `json:"bot_name"`
-	CashBalanceCents         pgtype.Int8        `json:"cash_balance_cents"`
-	CashHoldCents            pgtype.Int8        `json:"cash_hold_cents"`
-	TotalPortfolioValueCents pgtype.Int8        `json:"total_portfolio_value_cents"`
-	IsActive                 pgtype.Bool        `json:"is_active"`
-	TradingStrategy          pgtype.Text        `json:"trading_strategy"`
-	RiskTolerance            pgtype.Text        `json:"risk_tolerance"`
-	LastTradeAt              pgtype.Timestamptz `json:"last_trade_at"`
-	TotalTradesCount         pgtype.Int4        `json:"total_trades_count"`
-	CreatedAt                pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
-}
-
 type Leaderboard struct {
-	UserID                   string      `json:"user_id"`
-	Username                 string      `json:"username"`
+	TraderID                 int64       `json:"trader_id"`
+	AuthUserID               pgtype.Text `json:"auth_user_id"`
+	DisplayName              string      `json:"display_name"`
 	CashBalanceCents         pgtype.Int8 `json:"cash_balance_cents"`
 	TotalPortfolioValueCents pgtype.Int8 `json:"total_portfolio_value_cents"`
 	Rank                     int64       `json:"rank"`
@@ -35,8 +20,7 @@ type Leaderboard struct {
 
 type Order struct {
 	ID                pgtype.UUID        `json:"id"`
-	UserID            pgtype.Text        `json:"user_id"`
-	BotID             pgtype.Int8        `json:"bot_id"`
+	TraderID          int64              `json:"trader_id"`
 	StockTicker       string             `json:"stock_ticker"`
 	OrderType         string             `json:"order_type"`
 	Side              string             `json:"side"`
@@ -52,9 +36,8 @@ type Order struct {
 }
 
 type Position struct {
-	ID               pgtype.UUID        `json:"id"`
-	UserID           pgtype.Text        `json:"user_id"`
-	BotID            pgtype.Int8        `json:"bot_id"`
+	ID               int64              `json:"id"`
+	TraderID         int64              `json:"trader_id"`
 	StockTicker      string             `json:"stock_ticker"`
 	Quantity         int64              `json:"quantity"`
 	QuantityHold     pgtype.Int8        `json:"quantity_hold"`
@@ -100,28 +83,33 @@ type Stock struct {
 }
 
 type Trade struct {
-	ID              pgtype.UUID        `json:"id"`
+	ID              int64              `json:"id"`
 	StockTicker     string             `json:"stock_ticker"`
 	BuyerOrderID    pgtype.UUID        `json:"buyer_order_id"`
 	SellerOrderID   pgtype.UUID        `json:"seller_order_id"`
-	BuyerUserID     pgtype.Text        `json:"buyer_user_id"`
-	BuyerBotID      pgtype.Int8        `json:"buyer_bot_id"`
-	SellerUserID    pgtype.Text        `json:"seller_user_id"`
-	SellerBotID     pgtype.Int8        `json:"seller_bot_id"`
+	BuyerTraderID   int64              `json:"buyer_trader_id"`
+	SellerTraderID  int64              `json:"seller_trader_id"`
 	Quantity        int64              `json:"quantity"`
 	PriceCents      int64              `json:"price_cents"`
 	TotalValueCents int64              `json:"total_value_cents"`
 	ExecutedAt      pgtype.Timestamptz `json:"executed_at"`
 }
 
-type UserProfile struct {
-	ID                       pgtype.UUID        `json:"id"`
-	UserID                   string             `json:"user_id"`
-	Username                 string             `json:"username"`
+type Trader struct {
+	ID                       int64              `json:"id"`
+	TraderType               string             `json:"trader_type"`
+	AuthUserID               pgtype.Text        `json:"auth_user_id"`
+	OwnerTraderID            pgtype.Int8        `json:"owner_trader_id"`
+	DisplayName              string             `json:"display_name"`
 	CashBalanceCents         pgtype.Int8        `json:"cash_balance_cents"`
 	CashHoldCents            pgtype.Int8        `json:"cash_hold_cents"`
 	TotalPortfolioValueCents pgtype.Int8        `json:"total_portfolio_value_cents"`
+	IsActive                 pgtype.Bool        `json:"is_active"`
+	TradingStrategy          pgtype.Text        `json:"trading_strategy"`
+	RiskTolerance            pgtype.Text        `json:"risk_tolerance"`
 	LastActiveAt             pgtype.Timestamptz `json:"last_active_at"`
+	LastTradeAt              pgtype.Timestamptz `json:"last_trade_at"`
+	TotalTradesCount         pgtype.Int4        `json:"total_trades_count"`
 	CreatedAt                pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }

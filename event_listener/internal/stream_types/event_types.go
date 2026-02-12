@@ -25,8 +25,7 @@ type Event struct {
 
 type OrderPlacedEvent struct {
 	OrderID         string    `json:"order_id"`
-	UserID          string    `json:"user_id"`
-	BotID           int64     `json:"bot_id"`
+	TraderID        int64     `json:"trader_id"`
 	StockTicker     string    `json:"stock_ticker"`
 	OrderType       OrderType `json:"order_type"`
 	OrderSide       OrderSide `json:"order_side"`
@@ -35,24 +34,24 @@ type OrderPlacedEvent struct {
 }
 
 type OrderCancelledEvent struct {
-	OrderID           string `json:"order_id"`
-	UserID            string `json:"user_id"`
-	BotID             int64  `json:"bot_id"`
-	RemainingQuantity int64  `json:"remaining_quantity"`
+	OrderID           string    `json:"order_id"`
+	TraderID          int64     `json:"trader_id"`
+	OrderType         OrderType `json:"order_type"`
+	OrderSide         OrderSide `json:"order_side"`
+	StockTicker       string    `json:"stock_ticker"`
+	RemainingQuantity int64     `json:"remaining_quantity"`
 }
 
 type OrderFilledEvent struct {
 	OrderID        string `json:"order_id"`
-	UserID         string `json:"user_id"`
-	BotID          int64  `json:"bot_id"`
+	TraderID       int64  `json:"trader_id"`
 	Quantity       int64  `json:"total_quantity"`
 	FillPriceCents int64  `json:"fill_price_cents"`
 }
 
 type OrderPartiallyFilledEvent struct {
 	OrderID           string `json:"order_id"`
-	UserID            string `json:"user_id"`
-	BotID             int64  `json:"bot_id"`
+	TraderID          int64  `json:"trader_id"`
 	FilledQuantity    int64  `json:"filled_quantity"`
 	RemainingQuantity int64  `json:"remaining_quantity"`
 	FillPriceCents    int64  `json:"fill_price_cents"`
@@ -60,24 +59,21 @@ type OrderPartiallyFilledEvent struct {
 
 type OrderRejectedEvent struct {
 	OrderID      string `json:"order_id"`
-	UserID       string `json:"user_id"`
-	BotID        int64  `json:"bot_id"`
+	TraderID     int64  `json:"trader_id"`
 	Reason       string `json:"reason"`
 	ErrorMessage string `json:"error_message"`
 }
 
 type TradeExecutedEvent struct {
-	TradeID         string `json:"trade_id"`
-	StockTicker     string `json:"stock_ticker"`
-	BuyerOrderID    string `json:"buyer_order_id"`
-	SellerOrderID   string `json:"seller_order_id"`
-	BuyerUserID     string `json:"buyer_user_id"`
-	BuyerBotID      int64  `json:"buyer_bot_id"`
-	SellerUserID    string `json:"seller_user_id"`
-	SellerBotID     int64  `json:"seller_bot_id"`
-	Quantity        int64  `json:"quantity"`
-	PriceCents      int64  `json:"price_cents"`
-	TotalValueCents int64  `json:"total_value_cents"`
+	StockTicker     string    `json:"stock_ticker"`
+	BuyerOrderID    string    `json:"buyer_order_id"`
+	SellerOrderID   string    `json:"seller_order_id"`
+	BuyerOrderType  OrderType `json:"buyer_order_type"`
+	BuyerTraderID   int64     `json:"buyer_trader_id"`
+	SellerTraderID  int64     `json:"seller_trader_id"`
+	Quantity        int64     `json:"quantity"`
+	PriceCents      int64     `json:"price_cents"`
+	TotalValueCents int64     `json:"total_value_cents"`
 }
 
 // EventPayload is a marker interface that all event payload types implement
