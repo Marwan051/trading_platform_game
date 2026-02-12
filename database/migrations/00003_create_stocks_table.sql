@@ -7,7 +7,7 @@ CREATE TABLE stocks (
     description TEXT,
     current_price_cents BIGINT NOT NULL CHECK (current_price_cents > 0),
     previous_close_cents BIGINT,
-    total_shares BIGINT DEFAULT 1000000,
+    total_shares BIGINT DEFAULT 10000,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
