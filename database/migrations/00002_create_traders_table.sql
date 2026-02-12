@@ -13,19 +13,6 @@ CREATE TABLE traders (
         cash_hold_cents BIGINT DEFAULT 0 CHECK (cash_hold_cents >= 0),
         total_portfolio_value_cents BIGINT DEFAULT 1000000,
         is_active BOOLEAN DEFAULT TRUE,
-        trading_strategy TEXT CHECK (
-            trading_strategy IS NULL
-            OR trading_strategy IN (
-                'RANDOM',
-                'VALUE_INVESTOR',
-                'TREND_FOLLOWER',
-                'CONTRARIAN'
-            )
-        ),
-        risk_tolerance TEXT CHECK (
-            risk_tolerance IS NULL
-            OR risk_tolerance IN ('CONSERVATIVE', 'MEDIUM', 'AGGRESSIVE')
-        ),
         last_active_at TIMESTAMPTZ DEFAULT NOW(),
         last_trade_at TIMESTAMPTZ,
         total_trades_count INTEGER DEFAULT 0,
