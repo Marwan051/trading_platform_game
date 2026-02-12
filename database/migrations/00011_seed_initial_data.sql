@@ -1,128 +1,195 @@
 -- +goose Up
 -- +goose StatementBegin
 -- Seed demo users
-INSERT INTO user_profile (
-        user_id,
-        username,
+INSERT INTO traders (
+        trader_type,
+        auth_user_id,
+        display_name,
         cash_balance_cents,
         total_portfolio_value_cents
     )
-VALUES ('demo_user_1', 'AliceTrader', 10000000, 10000000),
+VALUES (
+        'USER',
+        'demo_user_1',
+        'AliceTrader',
+        10000000,
+        10000000
+    ),
     -- $100,000
-    ('demo_user_2', 'BobInvestor', 5000000, 5000000),
+    (
+        'USER',
+        'demo_user_2',
+        'BobInvestor',
+        5000000,
+        5000000
+    ),
     -- $50,000
-    ('demo_user_3', 'CharlieHODL', 25000000, 25000000),
+    (
+        'USER',
+        'demo_user_3',
+        'CharlieHODL',
+        25000000,
+        25000000
+    ),
     -- $250,000
-    ('demo_user_4', 'DianaDay', 15000000, 15000000),
+    (
+        'USER',
+        'demo_user_4',
+        'DianaDay',
+        15000000,
+        15000000
+    ),
     -- $150,000
-    ('demo_user_5', 'EthanSwing', 7500000, 7500000),
+    (
+        'USER',
+        'demo_user_5',
+        'EthanSwing',
+        7500000,
+        7500000
+    ),
     -- $75,000
-    ('demo_user_6', 'FionaValue', 20000000, 20000000),
+    (
+        'USER',
+        'demo_user_6',
+        'FionaValue',
+        20000000,
+        20000000
+    ),
     -- $200,000
-    ('demo_user_7', 'GeorgeQuant', 30000000, 30000000),
+    (
+        'USER',
+        'demo_user_7',
+        'GeorgeQuant',
+        30000000,
+        30000000
+    ),
     -- $300,000
-    ('demo_user_8', 'HannahScalp', 5000000, 5000000);
+    (
+        'USER',
+        'demo_user_8',
+        'HannahScalp',
+        5000000,
+        5000000
+    );
 -- $50,000
 -- Seed trading bots with different strategies
-INSERT INTO bots (
-        owner_user_id,
-        bot_name,
+INSERT INTO traders (
+        trader_type,
+        owner_trader_id,
+        display_name,
         cash_balance_cents,
         total_portfolio_value_cents,
         trading_strategy,
         risk_tolerance
     )
-VALUES -- System bots (no owner)
-    (
-        NULL,
-        'MarketMaker_Alpha',
-        50000000,
-        50000000,
-        'RANDOM',
-        'MEDIUM'
-    ),
-    -- $500,000
-    (
-        NULL,
-        'MarketMaker_Beta',
-        50000000,
-        50000000,
-        'RANDOM',
-        'MEDIUM'
-    ),
-    -- $500,000
-    (
-        NULL,
-        'TrendBot_Gamma',
-        25000000,
-        25000000,
-        'TREND_FOLLOWER',
-        'AGGRESSIVE'
-    ),
-    -- $250,000
-    (
-        NULL,
-        'ValueBot_Delta',
-        30000000,
-        30000000,
-        'VALUE_INVESTOR',
-        'CONSERVATIVE'
-    ),
-    -- $300,000
-    (
-        NULL,
-        'ContraBotEpsilon',
-        20000000,
-        20000000,
-        'CONTRARIAN',
-        'AGGRESSIVE'
-    ),
-    -- $200,000
-    -- User-owned bots
-    (
-        'demo_user_1',
-        'Alice_Bot_1',
-        10000000,
-        10000000,
-        'VALUE_INVESTOR',
-        'MEDIUM'
-    ),
-    -- $100,000
-    (
-        'demo_user_3',
-        'Charlie_Bot_1',
-        15000000,
-        15000000,
-        'TREND_FOLLOWER',
-        'AGGRESSIVE'
-    ),
-    -- $150,000
-    (
-        'demo_user_3',
-        'Charlie_Bot_2',
-        10000000,
-        10000000,
-        'CONTRARIAN',
-        'MEDIUM'
-    ),
-    -- $100,000
-    (
-        'demo_user_6',
-        'Fiona_Bot_1',
-        20000000,
-        20000000,
-        'VALUE_INVESTOR',
-        'CONSERVATIVE'
-    ),
-    -- $200,000
-    (
-        'demo_user_7',
-        'George_Bot_1',
-        25000000,
-        25000000,
-        'RANDOM',
-        'AGGRESSIVE'
-    );
+SELECT 'BOT',
+    owner.id,
+    seeds.display_name,
+    seeds.cash_balance_cents,
+    seeds.total_portfolio_value_cents,
+    seeds.trading_strategy,
+    seeds.risk_tolerance
+FROM (
+        VALUES -- System bots (no owner)
+            (
+                NULL,
+                'MarketMaker_Alpha',
+                50000000,
+                50000000,
+                'RANDOM',
+                'MEDIUM'
+            ),
+            -- $500,000
+            (
+                NULL,
+                'MarketMaker_Beta',
+                50000000,
+                50000000,
+                'RANDOM',
+                'MEDIUM'
+            ),
+            -- $500,000
+            (
+                NULL,
+                'TrendBot_Gamma',
+                25000000,
+                25000000,
+                'TREND_FOLLOWER',
+                'AGGRESSIVE'
+            ),
+            -- $250,000
+            (
+                NULL,
+                'ValueBot_Delta',
+                30000000,
+                30000000,
+                'VALUE_INVESTOR',
+                'CONSERVATIVE'
+            ),
+            -- $300,000
+            (
+                NULL,
+                'ContraBotEpsilon',
+                20000000,
+                20000000,
+                'CONTRARIAN',
+                'AGGRESSIVE'
+            ),
+            -- $200,000
+            -- User-owned bots
+            (
+                'demo_user_1',
+                'Alice_Bot_1',
+                10000000,
+                10000000,
+                'VALUE_INVESTOR',
+                'MEDIUM'
+            ),
+            -- $100,000
+            (
+                'demo_user_3',
+                'Charlie_Bot_1',
+                15000000,
+                15000000,
+                'TREND_FOLLOWER',
+                'AGGRESSIVE'
+            ),
+            -- $150,000
+            (
+                'demo_user_3',
+                'Charlie_Bot_2',
+                10000000,
+                10000000,
+                'CONTRARIAN',
+                'MEDIUM'
+            ),
+            -- $100,000
+            (
+                'demo_user_6',
+                'Fiona_Bot_1',
+                20000000,
+                20000000,
+                'VALUE_INVESTOR',
+                'CONSERVATIVE'
+            ),
+            -- $200,000
+            (
+                'demo_user_7',
+                'George_Bot_1',
+                25000000,
+                25000000,
+                'RANDOM',
+                'AGGRESSIVE'
+            )
+    ) AS seeds(
+        owner_auth_user_id,
+        display_name,
+        cash_balance_cents,
+        total_portfolio_value_cents,
+        trading_strategy,
+        risk_tolerance
+    )
+    LEFT JOIN traders owner ON owner.auth_user_id = seeds.owner_auth_user_id;
 -- $250,000
 -- Seed stocks from various sectors
 INSERT INTO stocks (
@@ -315,8 +382,8 @@ WHERE ticker IN (
         'PROP',
         'LINK'
     );
-DELETE FROM bots
-WHERE bot_name IN (
+DELETE FROM traders
+WHERE display_name IN (
         'MarketMaker_Alpha',
         'MarketMaker_Beta',
         'TrendBot_Gamma',
@@ -328,8 +395,8 @@ WHERE bot_name IN (
         'Fiona_Bot_1',
         'George_Bot_1'
     );
-DELETE FROM user_profile
-WHERE user_id IN (
+DELETE FROM traders
+WHERE auth_user_id IN (
         'demo_user_1',
         'demo_user_2',
         'demo_user_3',

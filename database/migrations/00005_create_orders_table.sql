@@ -2,9 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT,
-    -- References Better Auth user.id
-    bot_id BIGINT REFERENCES bots(id) ON DELETE CASCADE,
+    trader_id BIGINT NOT NULL REFERENCES traders(id) ON DELETE CASCADE,
     stock_ticker TEXT NOT NULL REFERENCES stocks(ticker) ON DELETE CASCADE,
     order_type TEXT NOT NULL CHECK (order_type IN ('MARKET', 'LIMIT')),
     side TEXT NOT NULL CHECK (side IN ('BUY', 'SELL')),
@@ -24,22 +22,9 @@ CREATE TABLE orders (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     filled_at TIMESTAMPTZ,
-    cancelled_at TIMESTAMPTZ,
-    CHECK (
-        (
-            user_id IS NOT NULL
-            AND bot_id IS NULL
-        )
-        OR (
-            user_id IS NULL
-            AND bot_id IS NOT NULL
-        )
-    )
+    cancelled_at TIMESTAMPTZ
 );
-CREATE INDEX idx_orders_user ON orders(user_id)
-WHERE user_id IS NOT NULL;
-CREATE INDEX idx_orders_bot ON orders(bot_id)
-WHERE bot_id IS NOT NULL;
+CREATE INDEX idx_orders_trader ON orders(trader_id);
 CREATE INDEX idx_orders_stock ON orders(stock_ticker);
 CREATE INDEX idx_orders_status ON orders(status)
 WHERE status IN ('PENDING', 'PARTIAL');

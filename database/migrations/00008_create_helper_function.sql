@@ -1,31 +1,16 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION update_user_portfolio_value(p_user_id TEXT) RETURNS BIGINT AS $$
+CREATE OR REPLACE FUNCTION update_trader_portfolio_value(p_trader_id BIGINT) RETURNS BIGINT AS $$
 DECLARE v_portfolio_value_cents BIGINT;
 BEGIN
 SELECT COALESCE(SUM(p.quantity * s.current_price_cents), 0) INTO v_portfolio_value_cents
 FROM positions p
     JOIN stocks s ON p.stock_ticker = s.ticker
-WHERE p.user_id = p_user_id;
-UPDATE user_profile
+WHERE p.trader_id = p_trader_id;
+UPDATE traders
 SET total_portfolio_value_cents = cash_balance_cents + v_portfolio_value_cents,
     updated_at = NOW()
-WHERE user_id = p_user_id;
-RETURN v_portfolio_value_cents;
-END;
-$$ LANGUAGE plpgsql;
--- Function to update bot portfolio value
-CREATE OR REPLACE FUNCTION update_bot_portfolio_value(p_bot_id UUID) RETURNS BIGINT AS $$
-DECLARE v_portfolio_value_cents BIGINT;
-BEGIN
-SELECT COALESCE(SUM(p.quantity * s.current_price_cents), 0) INTO v_portfolio_value_cents
-FROM positions p
-    JOIN stocks s ON p.stock_ticker = s.ticker
-WHERE p.bot_id = p_bot_id;
-UPDATE bots
-SET total_portfolio_value_cents = cash_balance_cents + v_portfolio_value_cents,
-    updated_at = NOW()
-WHERE id = p_bot_id;
+WHERE id = p_trader_id;
 RETURN v_portfolio_value_cents;
 END;
 $$ LANGUAGE plpgsql;
@@ -66,7 +51,6 @@ $$ LANGUAGE plpgsql;
 -- +goose StatementEnd
 -- +goose Down
 -- +goose StatementBegin
-DROP FUNCTION IF EXISTS update_user_portfolio_value(TEXT) CASCADE;
-DROP FUNCTION IF EXISTS update_bot_portfolio_value(UUID) CASCADE;
+DROP FUNCTION IF EXISTS update_trader_portfolio_value(BIGINT) CASCADE;
 DROP FUNCTION IF EXISTS get_order_book(TEXT, INTEGER) CASCADE;
 -- +goose StatementEnd
