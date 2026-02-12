@@ -25,8 +25,7 @@ const (
 // PlaceOrderRequest contains the parameters to place a new order.
 type PlaceOrderRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	UserId                string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId                 int64                  `protobuf:"varint,2,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	TraderId              int64                  `protobuf:"varint,1,opt,name=trader_id,json=traderId,proto3" json:"trader_id,omitempty"`
 	StockTicker           string                 `protobuf:"bytes,3,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	OrderType             common.OrderType       `protobuf:"varint,4,opt,name=order_type,json=orderType,proto3,enum=common.types.OrderType" json:"order_type,omitempty"`
 	Side                  common.OrderSide       `protobuf:"varint,5,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
@@ -68,16 +67,9 @@ func (*PlaceOrderRequest) Descriptor() ([]byte, []int) {
 	return file_proto_v1_matching_engine_matching_engine_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PlaceOrderRequest) GetUserId() string {
+func (x *PlaceOrderRequest) GetTraderId() int64 {
 	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *PlaceOrderRequest) GetBotId() int64 {
-	if x != nil {
-		return x.BotId
+		return x.TraderId
 	}
 	return 0
 }
@@ -230,8 +222,7 @@ type CancelOrderRequest struct {
 	OrderId       string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
 	StockTicker   string                 `protobuf:"bytes,2,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Side          common.OrderSide       `protobuf:"varint,3,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
-	UserId        string                 `protobuf:"bytes,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId         string                 `protobuf:"bytes,5,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	TraderId      int64                  `protobuf:"varint,4,opt,name=trader_id,json=traderId,proto3" json:"trader_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -287,18 +278,11 @@ func (x *CancelOrderRequest) GetSide() common.OrderSide {
 	return common.OrderSide(0)
 }
 
-func (x *CancelOrderRequest) GetUserId() string {
+func (x *CancelOrderRequest) GetTraderId() int64 {
 	if x != nil {
-		return x.UserId
+		return x.TraderId
 	}
-	return ""
-}
-
-func (x *CancelOrderRequest) GetBotId() string {
-	if x != nil {
-		return x.BotId
-	}
-	return ""
+	return 0
 }
 
 // CancelOrderResponse returns the result of cancelling an order.
@@ -464,10 +448,9 @@ var File_proto_v1_matching_engine_matching_engine_proto protoreflect.FileDescrip
 
 const file_proto_v1_matching_engine_matching_engine_proto_rawDesc = "" +
 	"\n" +
-	".proto/v1/matching_engine/matching_engine.proto\x12\x17trading.matching_engine\x1a\x1bproto/v1/common/types.proto\"\xf3\x02\n" +
-	"\x11PlaceOrderRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x02 \x01(\x03R\x05botId\x12!\n" +
+	".proto/v1/matching_engine/matching_engine.proto\x12\x17trading.matching_engine\x1a\x1bproto/v1/common/types.proto\"\xe0\x02\n" +
+	"\x11PlaceOrderRequest\x12\x1b\n" +
+	"\ttrader_id\x18\x01 \x01(\x03R\btraderId\x12!\n" +
 	"\fstock_ticker\x18\x03 \x01(\tR\vstockTicker\x126\n" +
 	"\n" +
 	"order_type\x18\x04 \x01(\x0e2\x17.common.types.OrderTypeR\torderType\x12+\n" +
@@ -484,13 +467,12 @@ const file_proto_v1_matching_engine_matching_engine_proto_rawDesc = "" +
 	"\x18average_fill_price_cents\x18\x05 \x01(\x03R\x15averageFillPriceCents\x12#\n" +
 	"\rerror_message\x18\x06 \x01(\tR\ferrorMessage\x126\n" +
 	"\n" +
-	"error_code\x18\a \x01(\x0e2\x17.common.types.ErrorCodeR\terrorCode\"\xaf\x01\n" +
+	"error_code\x18\a \x01(\x0e2\x17.common.types.ErrorCodeR\terrorCode\"\x9c\x01\n" +
 	"\x12CancelOrderRequest\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12!\n" +
 	"\fstock_ticker\x18\x02 \x01(\tR\vstockTicker\x12+\n" +
-	"\x04side\x18\x03 \x01(\x0e2\x17.common.types.OrderSideR\x04side\x12\x17\n" +
-	"\auser_id\x18\x04 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x05 \x01(\tR\x05botId\"o\n" +
+	"\x04side\x18\x03 \x01(\x0e2\x17.common.types.OrderSideR\x04side\x12\x1b\n" +
+	"\ttrader_id\x18\x04 \x01(\x03R\btraderId\"o\n" +
 	"\x13CancelOrderResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x19\n" +
 	"\border_id\x18\x02 \x01(\tR\aorderId\x12#\n" +

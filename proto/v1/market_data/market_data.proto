@@ -104,7 +104,7 @@ message GetRecentTradesResponse {
 
 // PublicTrade represents a trade that has occurred in the public market.
 message PublicTrade {
-  string trade_id = 1;
+  int64 trade_id = 1;
   string stock_ticker = 2;
   int64 quantity = 3;
   int64 price_cents = 4;
@@ -120,7 +120,7 @@ message StreamTradesRequest {
 
 // TradeUpdate represents a real-time update of a newly executed trade.
 message TradeUpdate {
-  string trade_id = 1;
+  int64 trade_id = 1;
   string stock_ticker = 2;
   int64 quantity = 3;
   int64 price_cents = 4;
@@ -151,7 +151,7 @@ message PriceUpdate {
   int64 change_cents = 3;
   int32 change_percent_basis_points = 4;
   int64 timestamp_ms = 5;
-  string caused_by_trade_id = 6;
+  int64 caused_by_trade_id = 6;
 }
 
 // GetOrderRequest request to fetch details of a specific order.
@@ -161,8 +161,7 @@ message GetOrderRequest {
 
 // GetUserOrdersRequest request to fetch orders belonging to a specific user or bot.
 message GetUserOrdersRequest {
-  string user_id = 1;
-  string bot_id = 2;
+  int64 trader_id = 1;
   repeated common.types.OrderStatus status_filter = 3;
   string stock_ticker = 4;
   int32 limit = 5;
@@ -177,8 +176,7 @@ message GetUserOrdersResponse {
 
 // StreamUserOrdersRequest request to subscribe to real-time order updates for a user.
 message StreamUserOrdersRequest {
-  string user_id = 1;
-  string bot_id = 2;
+  int64 trader_id = 1;
 }
 
 // OrderUpdate represents a real-time update to a specific order's status or fill state.

@@ -35,8 +35,7 @@ enum EventType {
 // OrderPlacedEvent is emitted when a new order is accepted.
 message OrderPlacedEvent {
   string order_id = 1;
-  string user_id = 2;
-  int64 bot_id = 3;
+  int64 trader_id = 2;
   string stock_ticker = 4;
   types.OrderType order_type = 5;
   types.OrderSide side = 6;
@@ -47,16 +46,14 @@ message OrderPlacedEvent {
 // OrderCancelledEvent is emitted when an order is cancelled.
 message OrderCancelledEvent {
   string order_id = 1;
-  string user_id = 2;
-  int64 bot_id = 3;
+  int64 trader_id = 2;
   int64 remaining_quantity = 4;
 }
 
 // OrderFilledEvent is emitted when an order is fully filled.
 message OrderFilledEvent {
   string order_id = 1;
-  string user_id = 2;
-  int64 bot_id = 3;
+  int64 trader_id = 2;
   int64 total_quantity = 4;
   int64 average_fill_price_cents = 5;
 }
@@ -64,8 +61,7 @@ message OrderFilledEvent {
 // OrderPartiallyFilledEvent is emitted when an order is partially filled.
 message OrderPartiallyFilledEvent {
   string order_id = 1;
-  string user_id = 2;
-  int64 bot_id = 3;
+  int64 trader_id = 2;
   int64 filled_quantity = 4;
   int64 remaining_quantity = 5;
   int64 fill_price_cents = 6;
@@ -74,23 +70,19 @@ message OrderPartiallyFilledEvent {
 // OrderRejectedEvent is emitted when an order is rejected.
 message OrderRejectedEvent {
   string order_id = 1;
-  string user_id = 2;
-  int64 bot_id = 3;
+  int64 trader_id = 2;
   types.ErrorCode reason = 4;
   string error_message = 5;
 }
 
 // TradeExecutedEvent is emitted when a trade is executed.
 message TradeExecutedEvent {
-  string trade_id = 1;
-  string stock_ticker = 2;
-  string buyer_order_id = 3;
-  string seller_order_id = 4;
-  string buyer_user_id = 5;
-  int64 buyer_bot_id = 6;
-  string seller_user_id = 7;
-  int64 seller_bot_id = 8;
-  int64 quantity = 9;
-  int64 price_cents = 10;
-  int64 total_value_cents = 11;
+  string stock_ticker = 1;
+  string buyer_order_id = 2;
+  string seller_order_id = 3;
+  int64 buyer_trader_id = 4;
+  int64 seller_trader_id = 5;
+  int64 quantity = 6;
+  int64 price_cents = 7;
+  int64 total_value_cents = 8;
 }

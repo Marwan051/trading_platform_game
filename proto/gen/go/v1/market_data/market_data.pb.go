@@ -579,7 +579,7 @@ func (x *GetRecentTradesResponse) GetTrades() []*PublicTrade {
 // PublicTrade represents a trade that has occurred in the public market.
 type PublicTrade struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	TradeId           string                 `protobuf:"bytes,1,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty"`
+	TradeId           int64                  `protobuf:"varint,1,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty"`
 	StockTicker       string                 `protobuf:"bytes,2,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Quantity          int64                  `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	PriceCents        int64                  `protobuf:"varint,4,opt,name=price_cents,json=priceCents,proto3" json:"price_cents,omitempty"`
@@ -620,11 +620,11 @@ func (*PublicTrade) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *PublicTrade) GetTradeId() string {
+func (x *PublicTrade) GetTradeId() int64 {
 	if x != nil {
 		return x.TradeId
 	}
-	return ""
+	return 0
 }
 
 func (x *PublicTrade) GetStockTicker() string {
@@ -717,7 +717,7 @@ func (x *StreamTradesRequest) GetStockTicker() string {
 // TradeUpdate represents a real-time update of a newly executed trade.
 type TradeUpdate struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	TradeId           string                 `protobuf:"bytes,1,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty"`
+	TradeId           int64                  `protobuf:"varint,1,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty"`
 	StockTicker       string                 `protobuf:"bytes,2,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Quantity          int64                  `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	PriceCents        int64                  `protobuf:"varint,4,opt,name=price_cents,json=priceCents,proto3" json:"price_cents,omitempty"`
@@ -758,11 +758,11 @@ func (*TradeUpdate) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *TradeUpdate) GetTradeId() string {
+func (x *TradeUpdate) GetTradeId() int64 {
 	if x != nil {
 		return x.TradeId
 	}
-	return ""
+	return 0
 }
 
 func (x *TradeUpdate) GetStockTicker() string {
@@ -950,7 +950,7 @@ type PriceUpdate struct {
 	ChangeCents              int64                  `protobuf:"varint,3,opt,name=change_cents,json=changeCents,proto3" json:"change_cents,omitempty"`
 	ChangePercentBasisPoints int32                  `protobuf:"varint,4,opt,name=change_percent_basis_points,json=changePercentBasisPoints,proto3" json:"change_percent_basis_points,omitempty"`
 	TimestampMs              int64                  `protobuf:"varint,5,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
-	CausedByTradeId          string                 `protobuf:"bytes,6,opt,name=caused_by_trade_id,json=causedByTradeId,proto3" json:"caused_by_trade_id,omitempty"`
+	CausedByTradeId          int64                  `protobuf:"varint,6,opt,name=caused_by_trade_id,json=causedByTradeId,proto3" json:"caused_by_trade_id,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -1020,11 +1020,11 @@ func (x *PriceUpdate) GetTimestampMs() int64 {
 	return 0
 }
 
-func (x *PriceUpdate) GetCausedByTradeId() string {
+func (x *PriceUpdate) GetCausedByTradeId() int64 {
 	if x != nil {
 		return x.CausedByTradeId
 	}
-	return ""
+	return 0
 }
 
 // GetOrderRequest request to fetch details of a specific order.
@@ -1075,8 +1075,7 @@ func (x *GetOrderRequest) GetOrderId() string {
 // GetUserOrdersRequest request to fetch orders belonging to a specific user or bot.
 type GetUserOrdersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId         string                 `protobuf:"bytes,2,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	TraderId      int64                  `protobuf:"varint,1,opt,name=trader_id,json=traderId,proto3" json:"trader_id,omitempty"`
 	StatusFilter  []common.OrderStatus   `protobuf:"varint,3,rep,packed,name=status_filter,json=statusFilter,proto3,enum=common.types.OrderStatus" json:"status_filter,omitempty"`
 	StockTicker   string                 `protobuf:"bytes,4,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	Limit         int32                  `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -1115,18 +1114,11 @@ func (*GetUserOrdersRequest) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *GetUserOrdersRequest) GetUserId() string {
+func (x *GetUserOrdersRequest) GetTraderId() int64 {
 	if x != nil {
-		return x.UserId
+		return x.TraderId
 	}
-	return ""
-}
-
-func (x *GetUserOrdersRequest) GetBotId() string {
-	if x != nil {
-		return x.BotId
-	}
-	return ""
+	return 0
 }
 
 func (x *GetUserOrdersRequest) GetStatusFilter() []common.OrderStatus {
@@ -1213,8 +1205,7 @@ func (x *GetUserOrdersResponse) GetTotalCount() int32 {
 // StreamUserOrdersRequest request to subscribe to real-time order updates for a user.
 type StreamUserOrdersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId         string                 `protobuf:"bytes,2,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	TraderId      int64                  `protobuf:"varint,1,opt,name=trader_id,json=traderId,proto3" json:"trader_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1249,18 +1240,11 @@ func (*StreamUserOrdersRequest) Descriptor() ([]byte, []int) {
 	return file_proto_v1_market_data_market_data_proto_rawDescGZIP(), []int{18}
 }
 
-func (x *StreamUserOrdersRequest) GetUserId() string {
+func (x *StreamUserOrdersRequest) GetTraderId() int64 {
 	if x != nil {
-		return x.UserId
+		return x.TraderId
 	}
-	return ""
-}
-
-func (x *StreamUserOrdersRequest) GetBotId() string {
-	if x != nil {
-		return x.BotId
-	}
-	return ""
+	return 0
 }
 
 // OrderUpdate represents a real-time update to a specific order's status or fill state.
@@ -1602,7 +1586,7 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"\x17GetRecentTradesResponse\x128\n" +
 	"\x06trades\x18\x01 \x03(\v2 .trading.market_data.PublicTradeR\x06trades\"\x87\x02\n" +
 	"\vPublicTrade\x12\x19\n" +
-	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12!\n" +
+	"\btrade_id\x18\x01 \x01(\x03R\atradeId\x12!\n" +
 	"\fstock_ticker\x18\x02 \x01(\tR\vstockTicker\x12\x1a\n" +
 	"\bquantity\x18\x03 \x01(\x03R\bquantity\x12\x1f\n" +
 	"\vprice_cents\x18\x04 \x01(\x03R\n" +
@@ -1613,7 +1597,7 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"\x13StreamTradesRequest\x12!\n" +
 	"\fstock_ticker\x18\x01 \x01(\tR\vstockTicker\"\x87\x02\n" +
 	"\vTradeUpdate\x12\x19\n" +
-	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12!\n" +
+	"\btrade_id\x18\x01 \x01(\x03R\atradeId\x12!\n" +
 	"\fstock_ticker\x18\x02 \x01(\tR\vstockTicker\x12\x1a\n" +
 	"\bquantity\x18\x03 \x01(\x03R\bquantity\x12\x1f\n" +
 	"\vprice_cents\x18\x04 \x01(\x03R\n" +
@@ -1633,12 +1617,11 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"\fchange_cents\x18\x03 \x01(\x03R\vchangeCents\x12=\n" +
 	"\x1bchange_percent_basis_points\x18\x04 \x01(\x05R\x18changePercentBasisPoints\x12!\n" +
 	"\ftimestamp_ms\x18\x05 \x01(\x03R\vtimestampMs\x12+\n" +
-	"\x12caused_by_trade_id\x18\x06 \x01(\tR\x0fcausedByTradeId\",\n" +
+	"\x12caused_by_trade_id\x18\x06 \x01(\x03R\x0fcausedByTradeId\",\n" +
 	"\x0fGetOrderRequest\x12\x19\n" +
-	"\border_id\x18\x01 \x01(\tR\aorderId\"\xd7\x01\n" +
-	"\x14GetUserOrdersRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x02 \x01(\tR\x05botId\x12>\n" +
+	"\border_id\x18\x01 \x01(\tR\aorderId\"\xc4\x01\n" +
+	"\x14GetUserOrdersRequest\x12\x1b\n" +
+	"\ttrader_id\x18\x01 \x01(\x03R\btraderId\x12>\n" +
 	"\rstatus_filter\x18\x03 \x03(\x0e2\x19.common.types.OrderStatusR\fstatusFilter\x12!\n" +
 	"\fstock_ticker\x18\x04 \x01(\tR\vstockTicker\x12\x14\n" +
 	"\x05limit\x18\x05 \x01(\x05R\x05limit\x12\x16\n" +
@@ -1646,10 +1629,9 @@ const file_proto_v1_market_data_market_data_proto_rawDesc = "" +
 	"\x15GetUserOrdersResponse\x12+\n" +
 	"\x06orders\x18\x01 \x03(\v2\x13.common.types.OrderR\x06orders\x12\x1f\n" +
 	"\vtotal_count\x18\x02 \x01(\x05R\n" +
-	"totalCount\"I\n" +
-	"\x17StreamUserOrdersRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x02 \x01(\tR\x05botId\"\xdc\x02\n" +
+	"totalCount\"6\n" +
+	"\x17StreamUserOrdersRequest\x12\x1b\n" +
+	"\ttrader_id\x18\x01 \x01(\x03R\btraderId\"\xdc\x02\n" +
 	"\vOrderUpdate\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x128\n" +
 	"\n" +

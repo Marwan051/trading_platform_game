@@ -261,8 +261,7 @@ func (ErrorCode) EnumDescriptor() ([]byte, []int) {
 type Order struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	OrderId               string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
-	UserId                string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	BotId                 int64                  `protobuf:"varint,3,opt,name=bot_id,json=botId,proto3" json:"bot_id,omitempty"`
+	TraderId              int64                  `protobuf:"varint,2,opt,name=trader_id,json=traderId,proto3" json:"trader_id,omitempty"`
 	StockTicker           string                 `protobuf:"bytes,4,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	OrderType             OrderType              `protobuf:"varint,5,opt,name=order_type,json=orderType,proto3,enum=common.types.OrderType" json:"order_type,omitempty"`
 	Side                  OrderSide              `protobuf:"varint,6,opt,name=side,proto3,enum=common.types.OrderSide" json:"side,omitempty"`
@@ -315,16 +314,9 @@ func (x *Order) GetOrderId() string {
 	return ""
 }
 
-func (x *Order) GetUserId() string {
+func (x *Order) GetTraderId() int64 {
 	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *Order) GetBotId() int64 {
-	if x != nil {
-		return x.BotId
+		return x.TraderId
 	}
 	return 0
 }
@@ -409,14 +401,12 @@ func (x *Order) GetAverageFillPriceCents() int64 {
 // Trade represents an executed trade.
 type Trade struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	TradeId         string                 `protobuf:"bytes,1,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty"`
+	TradeId         int64                  `protobuf:"varint,1,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty"`
 	StockTicker     string                 `protobuf:"bytes,2,opt,name=stock_ticker,json=stockTicker,proto3" json:"stock_ticker,omitempty"`
 	BuyerOrderId    string                 `protobuf:"bytes,3,opt,name=buyer_order_id,json=buyerOrderId,proto3" json:"buyer_order_id,omitempty"`
 	SellerOrderId   string                 `protobuf:"bytes,4,opt,name=seller_order_id,json=sellerOrderId,proto3" json:"seller_order_id,omitempty"`
-	BuyerUserId     string                 `protobuf:"bytes,5,opt,name=buyer_user_id,json=buyerUserId,proto3" json:"buyer_user_id,omitempty"`
-	BuyerBotId      int64                  `protobuf:"varint,6,opt,name=buyer_bot_id,json=buyerBotId,proto3" json:"buyer_bot_id,omitempty"`
-	SellerUserId    string                 `protobuf:"bytes,7,opt,name=seller_user_id,json=sellerUserId,proto3" json:"seller_user_id,omitempty"`
-	SellerBotId     int64                  `protobuf:"varint,8,opt,name=seller_bot_id,json=sellerBotId,proto3" json:"seller_bot_id,omitempty"`
+	BuyerTraderId   int64                  `protobuf:"varint,5,opt,name=buyer_trader_id,json=buyerTraderId,proto3" json:"buyer_trader_id,omitempty"`
+	SellerTraderId  int64                  `protobuf:"varint,7,opt,name=seller_trader_id,json=sellerTraderId,proto3" json:"seller_trader_id,omitempty"`
 	Quantity        int64                  `protobuf:"varint,9,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	PriceCents      int64                  `protobuf:"varint,10,opt,name=price_cents,json=priceCents,proto3" json:"price_cents,omitempty"`
 	TotalValueCents int64                  `protobuf:"varint,11,opt,name=total_value_cents,json=totalValueCents,proto3" json:"total_value_cents,omitempty"`
@@ -455,11 +445,11 @@ func (*Trade) Descriptor() ([]byte, []int) {
 	return file_proto_v1_common_types_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Trade) GetTradeId() string {
+func (x *Trade) GetTradeId() int64 {
 	if x != nil {
 		return x.TradeId
 	}
-	return ""
+	return 0
 }
 
 func (x *Trade) GetStockTicker() string {
@@ -483,30 +473,16 @@ func (x *Trade) GetSellerOrderId() string {
 	return ""
 }
 
-func (x *Trade) GetBuyerUserId() string {
+func (x *Trade) GetBuyerTraderId() int64 {
 	if x != nil {
-		return x.BuyerUserId
-	}
-	return ""
-}
-
-func (x *Trade) GetBuyerBotId() int64 {
-	if x != nil {
-		return x.BuyerBotId
+		return x.BuyerTraderId
 	}
 	return 0
 }
 
-func (x *Trade) GetSellerUserId() string {
+func (x *Trade) GetSellerTraderId() int64 {
 	if x != nil {
-		return x.SellerUserId
-	}
-	return ""
-}
-
-func (x *Trade) GetSellerBotId() int64 {
-	if x != nil {
-		return x.SellerBotId
+		return x.SellerTraderId
 	}
 	return 0
 }
@@ -652,11 +628,10 @@ var File_proto_v1_common_types_proto protoreflect.FileDescriptor
 
 const file_proto_v1_common_types_proto_rawDesc = "" +
 	"\n" +
-	"\x1bproto/v1/common/types.proto\x12\fcommon.types\"\xae\x04\n" +
+	"\x1bproto/v1/common/types.proto\x12\fcommon.types\"\x9b\x04\n" +
 	"\x05Order\x12\x19\n" +
-	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
-	"\x06bot_id\x18\x03 \x01(\x03R\x05botId\x12!\n" +
+	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x1b\n" +
+	"\ttrader_id\x18\x02 \x01(\x03R\btraderId\x12!\n" +
 	"\fstock_ticker\x18\x04 \x01(\tR\vstockTicker\x126\n" +
 	"\n" +
 	"order_type\x18\x05 \x01(\x0e2\x17.common.types.OrderTypeR\torderType\x12+\n" +
@@ -669,17 +644,14 @@ const file_proto_v1_common_types_proto_rawDesc = "" +
 	"\x06status\x18\v \x01(\x0e2\x19.common.types.OrderStatusR\x06status\x12\"\n" +
 	"\rcreated_at_ms\x18\f \x01(\x03R\vcreatedAtMs\x12\"\n" +
 	"\rupdated_at_ms\x18\r \x01(\x03R\vupdatedAtMs\x127\n" +
-	"\x18average_fill_price_cents\x18\x0e \x01(\x03R\x15averageFillPriceCents\"\xb2\x03\n" +
+	"\x18average_fill_price_cents\x18\x0e \x01(\x03R\x15averageFillPriceCents\"\xf4\x02\n" +
 	"\x05Trade\x12\x19\n" +
-	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12!\n" +
+	"\btrade_id\x18\x01 \x01(\x03R\atradeId\x12!\n" +
 	"\fstock_ticker\x18\x02 \x01(\tR\vstockTicker\x12$\n" +
 	"\x0ebuyer_order_id\x18\x03 \x01(\tR\fbuyerOrderId\x12&\n" +
-	"\x0fseller_order_id\x18\x04 \x01(\tR\rsellerOrderId\x12\"\n" +
-	"\rbuyer_user_id\x18\x05 \x01(\tR\vbuyerUserId\x12 \n" +
-	"\fbuyer_bot_id\x18\x06 \x01(\x03R\n" +
-	"buyerBotId\x12$\n" +
-	"\x0eseller_user_id\x18\a \x01(\tR\fsellerUserId\x12\"\n" +
-	"\rseller_bot_id\x18\b \x01(\x03R\vsellerBotId\x12\x1a\n" +
+	"\x0fseller_order_id\x18\x04 \x01(\tR\rsellerOrderId\x12&\n" +
+	"\x0fbuyer_trader_id\x18\x05 \x01(\x03R\rbuyerTraderId\x12(\n" +
+	"\x10seller_trader_id\x18\a \x01(\x03R\x0esellerTraderId\x12\x1a\n" +
 	"\bquantity\x18\t \x01(\x03R\bquantity\x12\x1f\n" +
 	"\vprice_cents\x18\n" +
 	" \x01(\x03R\n" +
