@@ -1,5 +1,22 @@
 -- +goose Up
 -- +goose StatementBegin
+-- Seed sentinel trader for orphaned bots (when owner is deleted)
+INSERT INTO traders (
+        id,
+        trader_type,
+        display_name,
+        cash_balance_cents,
+        total_portfolio_value_cents,
+        is_active
+    ) OVERRIDING SYSTEM VALUE
+VALUES (
+        -1,
+        'BOT',
+        '_ORPHANED_BOTS_OWNER_',
+        0,
+        0,
+        FALSE
+    );
 -- Seed demo users
 INSERT INTO traders (
         trader_type,
@@ -78,62 +95,48 @@ INSERT INTO traders (
         owner_trader_id,
         display_name,
         cash_balance_cents,
-        total_portfolio_value_cents,
-        trading_strategy,
-        risk_tolerance
+        total_portfolio_value_cents
     )
 SELECT 'BOT',
     owner.id,
     seeds.display_name,
     seeds.cash_balance_cents,
-    seeds.total_portfolio_value_cents,
-    seeds.trading_strategy,
-    seeds.risk_tolerance
+    seeds.total_portfolio_value_cents
 FROM (
         VALUES -- System bots (no owner)
             (
                 NULL,
                 'MarketMaker_Alpha',
                 50000000,
-                50000000,
-                'RANDOM',
-                'MEDIUM'
+                50000000
             ),
             -- $500,000
             (
                 NULL,
                 'MarketMaker_Beta',
                 50000000,
-                50000000,
-                'RANDOM',
-                'MEDIUM'
+                50000000
             ),
             -- $500,000
             (
                 NULL,
                 'TrendBot_Gamma',
                 25000000,
-                25000000,
-                'TREND_FOLLOWER',
-                'AGGRESSIVE'
+                25000000
             ),
             -- $250,000
             (
                 NULL,
                 'ValueBot_Delta',
                 30000000,
-                30000000,
-                'VALUE_INVESTOR',
-                'CONSERVATIVE'
+                30000000
             ),
             -- $300,000
             (
                 NULL,
                 'ContraBotEpsilon',
                 20000000,
-                20000000,
-                'CONTRARIAN',
-                'AGGRESSIVE'
+                20000000
             ),
             -- $200,000
             -- User-owned bots
@@ -141,53 +144,41 @@ FROM (
                 'demo_user_1',
                 'Alice_Bot_1',
                 10000000,
-                10000000,
-                'VALUE_INVESTOR',
-                'MEDIUM'
+                10000000
             ),
             -- $100,000
             (
                 'demo_user_3',
                 'Charlie_Bot_1',
                 15000000,
-                15000000,
-                'TREND_FOLLOWER',
-                'AGGRESSIVE'
+                15000000
             ),
             -- $150,000
             (
                 'demo_user_3',
                 'Charlie_Bot_2',
                 10000000,
-                10000000,
-                'CONTRARIAN',
-                'MEDIUM'
+                10000000
             ),
             -- $100,000
             (
                 'demo_user_6',
                 'Fiona_Bot_1',
                 20000000,
-                20000000,
-                'VALUE_INVESTOR',
-                'CONSERVATIVE'
+                20000000
             ),
             -- $200,000
             (
                 'demo_user_7',
                 'George_Bot_1',
                 25000000,
-                25000000,
-                'RANDOM',
-                'AGGRESSIVE'
+                25000000
             )
     ) AS seeds(
         owner_auth_user_id,
         display_name,
         cash_balance_cents,
-        total_portfolio_value_cents,
-        trading_strategy,
-        risk_tolerance
+        total_portfolio_value_cents
     )
     LEFT JOIN traders owner ON owner.auth_user_id = seeds.owner_auth_user_id;
 -- $250,000

@@ -183,6 +183,14 @@ update_stock_price AS (
         updated_at = NOW()
     FROM trade_info ti
     WHERE stocks.ticker = ti.stock_ticker
+),
+update_buyer_portfolio AS (
+    SELECT update_trader_portfolio_value(ti.buyer_trader_id)
+    FROM trade_info ti
+),
+update_seller_portfolio AS (
+    SELECT update_trader_portfolio_value(ti.seller_trader_id)
+    FROM trade_info ti
 )
 SELECT 1
 `
@@ -204,6 +212,8 @@ type HandleLimitBuyTradeExecutedParams struct {
 // Release seller's share hold
 // Add cash to seller
 // Update stock price
+// Update buyer's portfolio value
+// Update seller's portfolio value
 func (q *Queries) HandleLimitBuyTradeExecuted(ctx context.Context, arg HandleLimitBuyTradeExecutedParams) error {
 	_, err := q.db.Exec(ctx, handleLimitBuyTradeExecuted,
 		arg.StockTicker,
@@ -347,6 +357,14 @@ update_stock_price AS (
         updated_at = NOW()
     FROM trade_info ti
     WHERE stocks.ticker = ti.stock_ticker
+),
+update_buyer_portfolio AS (
+    SELECT update_trader_portfolio_value(ti.buyer_trader_id)
+    FROM trade_info ti
+),
+update_seller_portfolio AS (
+    SELECT update_trader_portfolio_value(ti.seller_trader_id)
+    FROM trade_info ti
 )
 SELECT 1
 `
@@ -367,6 +385,8 @@ type HandleMarketBuyTradeExecutedParams struct {
 // Release seller's share hold
 // Add cash to seller
 // Update stock price
+// Update buyer's portfolio value
+// Update seller's portfolio value
 func (q *Queries) HandleMarketBuyTradeExecuted(ctx context.Context, arg HandleMarketBuyTradeExecutedParams) error {
 	_, err := q.db.Exec(ctx, handleMarketBuyTradeExecuted,
 		arg.StockTicker,

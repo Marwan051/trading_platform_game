@@ -178,6 +178,16 @@ update_stock_price AS (
         updated_at = NOW()
     FROM trade_info ti
     WHERE stocks.ticker = ti.stock_ticker
+),
+-- Update buyer's portfolio value
+update_buyer_portfolio AS (
+    SELECT update_trader_portfolio_value(ti.buyer_trader_id)
+    FROM trade_info ti
+),
+-- Update seller's portfolio value
+update_seller_portfolio AS (
+    SELECT update_trader_portfolio_value(ti.seller_trader_id)
+    FROM trade_info ti
 )
 SELECT 1;
 -- name: HandleMarketBuyTradeExecuted :exec
@@ -258,6 +268,16 @@ update_stock_price AS (
         updated_at = NOW()
     FROM trade_info ti
     WHERE stocks.ticker = ti.stock_ticker
+),
+-- Update buyer's portfolio value
+update_buyer_portfolio AS (
+    SELECT update_trader_portfolio_value(ti.buyer_trader_id)
+    FROM trade_info ti
+),
+-- Update seller's portfolio value
+update_seller_portfolio AS (
+    SELECT update_trader_portfolio_value(ti.seller_trader_id)
+    FROM trade_info ti
 )
 SELECT 1;
 -- name: HandleOrderFilled :exec

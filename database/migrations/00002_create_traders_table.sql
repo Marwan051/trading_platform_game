@@ -6,8 +6,8 @@ CREATE TABLE traders (
     auth_user_id TEXT UNIQUE,
     -- References Better Auth's user.id (for USER traders)
     owner_trader_id BIGINT REFERENCES traders(id) ON DELETE
-    SET 0,
-        -- Owner for BOT traders, NULL for system bots
+    SET DEFAULT DEFAULT -1,
+        -- Owner for BOT traders, NULL for system bots, -1 for orphaned bots
         display_name TEXT UNIQUE NOT NULL,
         cash_balance_cents BIGINT DEFAULT 1000000 CHECK (cash_balance_cents >= 0),
         cash_hold_cents BIGINT DEFAULT 0 CHECK (cash_hold_cents >= 0),
@@ -23,8 +23,6 @@ CREATE TABLE traders (
                 trader_type = 'USER'
                 AND auth_user_id IS NOT NULL
                 AND owner_trader_id IS NULL
-                AND trading_strategy IS NULL
-                AND risk_tolerance IS NULL
             )
             OR (
                 trader_type = 'BOT'

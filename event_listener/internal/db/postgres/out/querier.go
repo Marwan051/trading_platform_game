@@ -21,6 +21,8 @@ type Querier interface {
 	// Release seller's share hold
 	// Add cash to seller
 	// Update stock price
+	// Update buyer's portfolio value
+	// Update seller's portfolio value
 	HandleLimitBuyTradeExecuted(ctx context.Context, arg HandleLimitBuyTradeExecutedParams) error
 	HandleMarketBuyOrderCancelled(ctx context.Context, id pgtype.UUID) error
 	HandleMarketBuyOrderPlaced(ctx context.Context, arg HandleMarketBuyOrderPlacedParams) error
@@ -29,6 +31,8 @@ type Querier interface {
 	// Release seller's share hold
 	// Add cash to seller
 	// Update stock price
+	// Update buyer's portfolio value
+	// Update seller's portfolio value
 	HandleMarketBuyTradeExecuted(ctx context.Context, arg HandleMarketBuyTradeExecutedParams) error
 	HandleOrderFilled(ctx context.Context, id pgtype.UUID) error
 	HandleOrderPartiallyFilled(ctx context.Context, arg HandleOrderPartiallyFilledParams) error
