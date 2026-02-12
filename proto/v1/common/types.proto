@@ -49,17 +49,17 @@ enum ErrorCode {
 message Order {
   string order_id = 1;
   int64 trader_id = 2;
-  string stock_ticker = 4;
-  OrderType order_type = 5;
-  OrderSide side = 6;
-  int64 quantity = 7;
-  int64 filled_quantity = 8;
-  int64 remaining_quantity = 9;
-  int64 limit_price_cents = 10;
-  OrderStatus status = 11;
-  int64 created_at_ms = 12;
-  int64 updated_at_ms = 13;
-  int64 average_fill_price_cents = 14;
+  string stock_ticker = 3;
+  OrderType order_type = 4;
+  OrderSide side = 5;
+  int64 quantity = 6;
+  int64 filled_quantity = 7;
+  int64 remaining_quantity = 8;
+  int64 limit_price_cents = 9;
+  OrderStatus status = 10;
+  int64 created_at_ms = 11;
+  int64 updated_at_ms = 12;
+  int64 average_fill_price_cents = 13;
 }
 
 // Trade represents an executed trade.
@@ -69,11 +69,11 @@ message Trade {
   string buyer_order_id = 3;
   string seller_order_id = 4;
   int64 buyer_trader_id = 5;
-  int64 seller_trader_id = 7;
-  int64 quantity = 9;
-  int64 price_cents = 10;
-  int64 total_value_cents = 11;
-  int64 executed_at_ms = 12;
+  int64 seller_trader_id = 6;
+  int64 quantity = 7;
+  int64 price_cents = 8;
+  int64 total_value_cents = 9;
+  int64 executed_at_ms = 10;
 }
 
 // StockPrice represents current and recent price information for a stock.

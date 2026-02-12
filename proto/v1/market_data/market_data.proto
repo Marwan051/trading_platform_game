@@ -162,10 +162,10 @@ message GetOrderRequest {
 // GetUserOrdersRequest request to fetch orders belonging to a specific user or bot.
 message GetUserOrdersRequest {
   int64 trader_id = 1;
-  repeated common.types.OrderStatus status_filter = 3;
-  string stock_ticker = 4;
-  int32 limit = 5;
-  int64 offset = 6;
+  repeated common.types.OrderStatus status_filter = 2;
+  string stock_ticker = 3;
+  int32 limit = 4;
+  int64 offset = 5;
 }
 
 // GetUserOrdersResponse response containing a list of user orders.

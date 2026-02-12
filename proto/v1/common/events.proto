@@ -36,43 +36,43 @@ enum EventType {
 message OrderPlacedEvent {
   string order_id = 1;
   int64 trader_id = 2;
-  string stock_ticker = 4;
-  types.OrderType order_type = 5;
-  types.OrderSide side = 6;
-  int64 quantity = 7;
-  int64 limit_price_cents = 8;
+  string stock_ticker = 3;
+  types.OrderType order_type = 4;
+  types.OrderSide side = 5;
+  int64 quantity = 6;
+  int64 limit_price_cents = 7;
 }
 
 // OrderCancelledEvent is emitted when an order is cancelled.
 message OrderCancelledEvent {
   string order_id = 1;
   int64 trader_id = 2;
-  int64 remaining_quantity = 4;
+  int64 remaining_quantity = 3;
 }
 
 // OrderFilledEvent is emitted when an order is fully filled.
 message OrderFilledEvent {
   string order_id = 1;
   int64 trader_id = 2;
-  int64 total_quantity = 4;
-  int64 average_fill_price_cents = 5;
+  int64 total_quantity = 3;
+  int64 average_fill_price_cents = 4;
 }
 
 // OrderPartiallyFilledEvent is emitted when an order is partially filled.
 message OrderPartiallyFilledEvent {
   string order_id = 1;
   int64 trader_id = 2;
-  int64 filled_quantity = 4;
-  int64 remaining_quantity = 5;
-  int64 fill_price_cents = 6;
+  int64 filled_quantity = 3;
+  int64 remaining_quantity = 4;
+  int64 fill_price_cents = 5;
 }
 
 // OrderRejectedEvent is emitted when an order is rejected.
 message OrderRejectedEvent {
   string order_id = 1;
   int64 trader_id = 2;
-  types.ErrorCode reason = 4;
-  string error_message = 5;
+  types.ErrorCode reason = 3;
+  string error_message = 4;
 }
 
 // TradeExecutedEvent is emitted when a trade is executed.
