@@ -153,7 +153,7 @@ cd ../event_listener && go test ./...
 
 ```bash
 docker compose down -v  # Remove volumes
-docker compose up db migrator
+docker compose up -d db migrator --build
 ```
 
 ## Connection Details
