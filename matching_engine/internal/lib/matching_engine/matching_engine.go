@@ -452,10 +452,3 @@ func (me *MatchingEngine) CancelOrder(stock, orderId string, side types.OrderSid
 
 	return true, nil
 }
-
-func min(a, b int64) int64 {
-	if a < b {
-		return a
-	}
-	return b
-}
