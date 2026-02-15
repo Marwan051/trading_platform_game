@@ -25,13 +25,20 @@ func NewMatchingEngine(streamer streamingclient.StreamingClient) *MatchingEngine
 func (me *MatchingEngine) getOrCreateOrderBook(stock string) *types.StockOrderBook {
 	// Try to load existing book
 	if book, ok := me.orderBooks.Load(stock); ok {
-		return book.(*types.StockOrderBook)
+		if orderBook, ok := book.(*types.StockOrderBook); ok {
+			return orderBook
+		}
+		// Fallback: corrupt data, create new book
 	}
 
 	// Create new book and try to store it
 	newBook := types.NewStockOrderBook(stock)
 	actual, _ := me.orderBooks.LoadOrStore(stock, newBook)
-	return actual.(*types.StockOrderBook)
+	if orderBook, ok := actual.(*types.StockOrderBook); ok {
+		return orderBook
+	}
+	// Should never happen, but return new book as fallback
+	return newBook
 }
 
 // SubmitOrder submits an order and attempts to match it
@@ -424,7 +431,10 @@ func (me *MatchingEngine) CancelOrder(stock, orderId string, side types.OrderSid
 		return false, nil // Order book doesn't exist, so order not found
 	}
 
-	book := value.(*types.StockOrderBook)
+	book, ok := value.(*types.StockOrderBook)
+	if !ok {
+		return false, errors.New("invalid order book type in sync.Map")
+	}
 	book.Mu.Lock()
 	defer book.Mu.Unlock()
 

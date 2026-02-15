@@ -72,13 +72,17 @@ func (pl *PriceLevel) Front() *Order {
 	if pl.orders.Len() == 0 {
 		return nil
 	}
-	return pl.orders.Front().Value.(*Order)
+	if order, ok := pl.orders.Front().Value.(*Order); ok {
+		return order
+	}
+	return nil
 }
 
 // RemoveOrder removes an order from this price level
 func (pl *PriceLevel) RemoveOrder(element *list.Element) {
-	order := element.Value.(*Order)
-	pl.volume -= order.Quantity
+	if order, ok := element.Value.(*Order); ok {
+		pl.volume -= order.Quantity
+	}
 	pl.orders.Remove(element)
 }
 
@@ -88,7 +92,10 @@ func (pl *PriceLevel) RemoveFront() *Order {
 		return nil
 	}
 	element := pl.orders.Front()
-	order := element.Value.(*Order)
+	order, ok := element.Value.(*Order)
+	if !ok {
+		return nil
+	}
 	pl.volume -= order.Quantity
 	pl.orders.Remove(element)
 	return order
@@ -183,7 +190,10 @@ func (obs *OrderBookSide) RemoveOrder(orderId string) (*Order, bool) {
 		return nil, false
 	}
 
-	order := element.Value.(*Order)
+	order, ok := element.Value.(*Order)
+	if !ok {
+		return nil, false
+	}
 	price := obs.orderToPrice[orderId]
 	level := obs.levels[price]
 
