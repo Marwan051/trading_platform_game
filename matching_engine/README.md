@@ -1,123 +1,98 @@
-# Matching Engine
+# ⚡ Matching Engine
 
-The Matching Engine is the core component of the trading platform responsible for matching buy and sell orders for stocks. It is designed to be high-performance, concurrent, and correct, ensuring fair execution of trades based on **Price-Time Priority (FIFO)**.
+The **Matching Engine** is the high-performance core of the Trading Platform Game. It is a concurrent, in-memory order matching system responsible for executing buy and sell orders with sub-millisecond latency.
 
-## Core Concepts & Data Structures
+Built with **Go**, it prioritizes correctness and speed, ensuring fair execution based on **Price-Time Priority (FIFO)**.
 
-Understanding the matching engine requires understanding its internal data structures defined in `internal/lib/types/order_types.go`. These structures are optimized for $O(1)$ access and $O(\log N)$ updates.
+## 🚀 Key Features
 
-### 1. The Order Book (`StockOrderBook`)
+- **High Concurrency**: Independent order books for each stock allow parallel processing without lock contention.
+- **Price-Time Priority**: Strictly follows FIFO rules—orders at the same price are matched based on arrival time.
+- **Microsecond Latency**: Optimized internal data structures ($O(1)$ lookups, $O(\log N)$ updates).
+- **Event-Driven**: Emits real-time trade execution and order status events via Valkey (Redis) Streams.
+- **gRPC API**: Strongly typed communication with other services.
 
-Each stock (e.g., "AAPL") has its own independent `StockOrderBook`. This allows the engine to process trades for different stocks in parallel without blocking each other.
+## 🛠 Tech Stack
 
-- **Concurrency**: Protected by a `sync.RWMutex` to ensure thread-safety.
-- **Components**: Contains a `BuySide` (Bids) and a `SellSide` (Asks).
+- **Language**: Go 1.22+
+- **Communication**: gRPC / Protobuf
+- **Event Streaming**: Valkey (Redis) Streams
 
-### 2. PriceLevel (The Queue)
+## 🏗 Architecture & Internal Logic
 
-- **What it is**: A group of all orders at a single specific price.
-- **Structure**: Uses a **Doubly-Linked List**.
-- **Logic**: This ensures **FIFO (First-In-First-Out)** execution. When the engine matches orders at a specific price (e.g., $150.00), it matches the oldest order (at the front of the list) first.
+The engine uses special data structures to maintain high throughput.
 
-### 3. PriceHeap (The Sorter)
+### Data Structures (`internal/lib/types`)
 
-- **What it is**: A priority queue that keeps track of active price levels.
-- **Buy Side**: Implemented as a **Max-Heap** (Highest Buy Price is at the top).
-- **Sell Side**: Implemented as a **Min-Heap** (Lowest Sell Price is at the top).
-- **Logic**: Allows the engine to find the "Best Bid" or "Best Ask" in $O(1)$ time.
+| Component       | Structure           | Purpose                                                            |
+| --------------- | ------------------- | ------------------------------------------------------------------ |
+| **Order Book**  | `sync.RWMutex`      | Thread-safe container for a single stock's bids and asks.          |
+| **Price Level** | Doubly-Linked List  | Stores all orders at a specific price. Ensures **FIFO** execution. |
+| **Price Heap**  | Max-Heap / Min-Heap | Keeps track of best prices ($O(1)$ access to best bid/ask).        |
+| **Order Map**   | Hash Map            | Quick access ($O(1)$) for order cancellation by ID.                |
 
-### 4. OrderBookSide (The Manager)
+### Matching Algorithm
 
-- **What it is**: Manages one side of the market (all Buys or all Sells).
-- **Lookups**: Contains a Hash Map (`orderID -> Order`) to allow for $O(1)$ order cancellation.
-- **Lazy Deletion**: When a price level becomes empty, it is removed from the map immediately, but removed from the Heap only when it bubbles to the top. This keeps the critical path fast.
+When an order is submitted via `SubmitOrder`:
 
----
+1.  **Validation**: Basic checks (quantity, price, balance).
+2.  **Locking**: The specific stock's book is locked (granular locking).
+3.  **Crossing**: The engine checks if the order matches against the _opposite_ side of the book.
+    - **Buy Order**: Matched against lowest `Sell` prices (Min-Heap).
+    - **Sell Order**: Matched against highest `Buy` prices (Max-Heap).
+4.  **Execution**: Matches are generated until the order is filled or liquidity runs out.
+5.  **Resting**: Unfilled limit orders are added to the book.
 
-## Matching Logic (`matching_engine.go`)
+## ⚙️ Configuration
 
-The core matching loop happens in `SubmitOrder` and its helper functions `matchBuyOrder` and `matchSellOrder`.
+| Variable             | Description                                       | Default                  |
+| -------------------- | ------------------------------------------------- | ------------------------ |
+| `GRPC_ADDR`          | Address for the gRPC server to listen on          | `:50051`                 |
+| `ENVIRONMENT`        | Runtime environment (`development`, `production`) | `development`            |
+| `VALKEY_HOST`        | Hostname of the Valkey/Redis instance             | `localhost`              |
+| `VALKEY_PORT`        | Port of the Valkey/Redis instance                 | `6379`                   |
+| `VALKEY_STREAM_NAME` | Key for the event stream                          | `matching_engine_stream` |
+| `SHUTDOWN_TIMEOUT`   | Time to wait for graceful shutdown                | `30s`                    |
 
-### 1. Order Submission
+## Getting Started
 
-When a user places an order:
+### Prerequisites
 
-1.  **Validation**: checks quantity > 0, price > 0, etc.
-2.  **Locking**: The specific stock's order book is locked.
-3.  **Event**: An `OrderPlaced` event is emitted.
+- Go 1.22+
+- Docker
+- Valkey or Redis instance
 
-### 2. The Matching Loop
+### Running with Docker
 
-The engine attempts to match the incoming order immediately against the **opposite side** of the book.
+The service is part of the main `docker-compose.yml` stack.
 
-**For a BUY Order:**
-
-1.  **Check Best Ask**: The engine peeks at the top of the `SellSide` heap (Lowest Sell Price).
-2.  **Price Check**:
-    - **Limit Order**: Is `Buy Limit Price >= Best Ask Price`?
-    - **Market Order**: Is there any sell order available? (And does the buyer have enough funds?)
-3.  **Match**: If the price crosses, the engine matches against the orders at that price level (FIFO).
-4.  **Repeat**: This continues until:
-    - The buy order is fully filled.
-    - There are no more sell orders.
-    - The next best sell price is too high (for Limit orders).
-    - The buyer runs out of funds (for Market orders).
-
-**For a SELL Order:**
-
-1.  **Check Best Bid**: The engine peeks at the top of the `BuySide` heap (Highest Buy Price).
-2.  **Price Check**: Is `Sell Limit Price <= Best Bid Price`?
-3.  **Match**: Executes trades against the buy orders.
-
-### 3. Post-Match Handling
-
-- **Filled**: If the incoming order is fully executed, `OrderFilled` events are emitted.
-- **Partial/Unfilled**:
-  - **Limit Orders**: Any remaining quantity is added to the `OrderBook` as a new resting order.
-  - **Market Orders**: Any unfilled quantity is typically cancelled (Immediate-Or-Cancel behavior) if liquidity runs out.
-
----
-
-## Code Structure
-
-```
-matching_engine/
-├── cmd/server/             # Server entry point
-├── internal/
-│   ├── config/            # Environment configuration
-│   ├── interceptors/      # gRPC middleware
-│   ├── lib/
-│   │   ├── events/        # Event publishing
-│   │   ├── matching_engine/ # Core matching logic
-│   │   └── types/         # Order and event types (Order, PriceLevel, Heap)
-│   ├── server/            # gRPC server setup
-│   └── service/           # gRPC service implementation
-└── Dockerfile
+```bash
+docker compose up matching-engine
 ```
 
-## gRPC API
+## API Reference
 
-### PlaceOrder
+The service exposes a gRPC interface defined in `proto/v1/matching_engine/matching_engine.proto`.
 
-Submit a new order for matching:
+### `PlaceOrder`
+
+Submits a market or limit order.
 
 ```protobuf
 message PlaceOrderRequest {
   int64 trader_id = 1;
   string stock_ticker = 2;
-  OrderType order_type = 3;        // MARKET or LIMIT
-  OrderSide side = 4;               // BUY or SELL
+  OrderType order_type = 3;  // MARKET or LIMIT
+  OrderSide side = 4;        // BUY or SELL
   int64 quantity = 5;
-  int64 limit_price_cents = 6;      // Required for LIMIT orders
+  int64 limit_price_cents = 6;
   int64 available_balance_cents = 7;
 }
 ```
 
-Returns matched trades and remaining unmatched quantity.
+### `CancelOrder`
 
-### CancelOrder
-
-Cancel an existing order:
+Removes a resting order from the book.
 
 ```protobuf
 message CancelOrderRequest {
@@ -127,38 +102,20 @@ message CancelOrderRequest {
 }
 ```
 
-### HealthCheck
+## Project Structure
 
-Service health status.
-
-## Configuration
-
-Set via environment variables:
-
-```bash
-GRPC_ADDR=:50051                          # gRPC listen address
-ENVIRONMENT=development                    # dev/staging/production
-SHUTDOWN_TIMEOUT=30s                       # Graceful shutdown timeout
-VALKEY_HOST=localhost                      # Valkey/Redis host
-VALKEY_PORT=6379                           # Valkey/Redis port
-VALKEY_STREAM_NAME=matching_engine_stream  # Event stream key
 ```
-
-## Running
-
-### With Docker Compose
-
-```bash
-docker compose up matching-engine
+matching_engine/
+├── cmd/
+│   └── server/            # Main entry point
+├── internal/
+│   ├── config/            # Configuration management
+│   ├── interceptors/      # gRPC logging/recovery middleware
+│   ├── lib/
+│   │   ├── events/        # Event streaming logic
+│   │   ├── matching_engine/ # Core domain logic (The Engine)
+│   │   └── types/         # Data structures (Heaps, Lists, Types)
+│   ├── server/            # gRPC server definition
+│   └── service/           # Implementation of the gRPC interface
+└── Dockerfile
 ```
-
-Service starts on `:50051` and connects to Valkey automatically.
-
-### Local Development
-
-```bash
-cd matching_engine
-go run cmd/server/main.go
-```
-
-Requires Valkey running locally on port 6379.
