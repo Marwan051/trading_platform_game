@@ -1,6 +1,6 @@
 # Database
 
-PostgreSQL 18 with TimescaleDB extension for time-series data. Uses Goose for migrations and sqlc for type-safe query generation.
+PostgreSQL with TimescaleDB extension for time-series data. Uses Goose for migrations and sqlc for type-safe query generation.
 
 ```
 database/
@@ -12,9 +12,9 @@ database/
 └── Dockerfile.migrator
 ```
 
-## Stack
+## Technologies
 
-- PostgreSQL 18
+- PostgreSQL
 - TimescaleDB for time-series processing
 - Goose for schema migrations
 - sqlc for type-safe SQL → Go code generation
@@ -40,8 +40,8 @@ database/
 ### Prerequisites
 
 - Docker
-- (Optional) Goose CLI for local migrations
-- (Optional) sqlc CLI for query generation
+- (Optional) [Goose](https://github.com/pressly/goose) CLI for local migrations
+- (Optional) [sqlc](https://github.com/sqlc-dev/sqlc) CLI for query generation
 
 ### Quick Start
 
@@ -77,29 +77,6 @@ goose -dir migrations status    # Check migration status
 goose -dir migrations version   # Show current version
 ```
 
-## Migrations
-
-### Naming Convention
-
-Migrations follow the pattern: `{version}_{description}.sql`
-
-Example: `00012_add_trader_statistics.sql`
-
-### Creating a New Migration
-
-```bash
-cd database/migrations
-goose create add_new_feature sql
-```
-
-Edit the generated file with both `-- +goose Up` and `-- +goose Down` sections.
-
-### Migration Guidelines
-
-- Always include rollback logic in `-- +goose Down` sections
-- Test up and down migrations locally before committing
-- Update seed data (00011) if schema changes affect it
-
 ## Query Development
 
 ### sqlc Configuration
@@ -125,80 +102,23 @@ cd ../backend
 sqlc generate
 ```
 
-## Development Workflow
-
-### 1. Schema Changes
-
-1. Create migration: `goose create feature_name sql`
-2. Write up/down SQL
-3. Test: `goose up` then `goose down`
-4. Commit
-
-### 2. Add Queries
-
-1. Edit `.sql` file in `queries/`
-2. Run `sqlc generate` in the service
-3. Use generated functions in code
-
-### 3. Testing
-
-Run integration tests that use the database:
-
-```bash
-cd ../matching_engine && go test ./...
-cd ../event_listener && go test ./...
-```
-
-### 4. Reset Database
-
-```bash
-docker compose down -v  # Remove volumes
-docker compose up -d db migrator --build
-```
-
 ## Connection Details
 
-### Local Development
-
-```
-Host: localhost
-Port: 5432
-Database: trading_platform
-User: postgres
-Password: postgres
-```
-
-Connection string:
-
-```
-postgres://postgres:postgres@localhost:5432/trading_platform?sslmode=disable
-```
-
-### Docker Internal
-
-Services within docker-compose use:
-
-```
-Host: db
-Port: 5432
-```
+| Env var      | Default                                                                      | Description                                           |
+| ------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+| DB_HOST      | localhost                                                                    | Database host (use `db` for internal Docker services) |
+| DB_PORT      | 5432                                                                         | Database port                                         |
+| DB_NAME      | trading_platform                                                             | Database name                                         |
+| DB_USER      | postgres                                                                     | Database user                                         |
+| DB_PASSWORD  | postgres                                                                     | Database password                                     |
+| DB_SSLMODE   | disable                                                                      | SSL mode for connection                               |
+| DATABASE_URL | postgres://postgres:postgres@localhost:5432/trading_platform?sslmode=disable | Full connection string (local)                        |
 
 ## Seed Data
 
 Initial data is in `migrations/00011_seed_initial_data.sql` - sample stocks, test accounts, and market prices. Modify as needed.
 
-## Common Operations
-
-### View Current Schema
-
-```bash
-docker exec -it trading_db psql -U postgres -d trading_platform
-\dt   # List tables
-\dv   # List views
-\d table_name  # Describe table
-```
-
-### Manual Queries
+## Manual Queries
 
 ```bash
 docker exec -it trading_db psql -U postgres -d trading_platform -c "SELECT * FROM traders LIMIT 5;"
