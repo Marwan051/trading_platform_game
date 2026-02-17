@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -16,10 +17,11 @@ import (
 )
 
 type Server struct {
-	grpcServer *grpc.Server
-	listener   net.Listener
-	logger     *slog.Logger
-	cfg        *config.Config
+	grpcServer        *grpc.Server
+	listener          net.Listener
+	logger            *slog.Logger
+	matchingEngineSVC *service.MatchingEngineService
+	cfg               *config.Config
 }
 
 func New(cfg *config.Config, logger *slog.Logger) *Server {
@@ -33,9 +35,10 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 
 	// Register services
 	matchingService := service.NewMatchingEngineService(logger, clients.ValkeyOptions{
-		ValkeyHost:       cfg.ValkeyHost,
-		ValkeyPort:       cfg.ValkeyPort,
-		ValkeyStreamName: cfg.ValkeyStreamName,
+		ValkeyHost:             cfg.ValkeyHost,
+		ValkeyPort:             cfg.ValkeyPort,
+		ValkeyStreamName:       cfg.ValkeyStreamName,
+		ValkeyRequestTimeoutMs: cfg.ValkeyRequestTimeout,
 	})
 	pb.RegisterMatchingEngineServer(grpcServer, matchingService)
 
@@ -45,9 +48,10 @@ func New(cfg *config.Config, logger *slog.Logger) *Server {
 	}
 
 	return &Server{
-		grpcServer: grpcServer,
-		logger:     logger,
-		cfg:        cfg,
+		grpcServer:        grpcServer,
+		logger:            logger,
+		cfg:               cfg,
+		matchingEngineSVC: matchingService,
 	}
 }
 
@@ -62,7 +66,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) {
-	// GracefulStop stops accepting new connections and waits for existing ones
+	// First stop accepting new connections and wait for in-flight RPCs to finish
 	stopped := make(chan struct{})
 	go func() {
 		s.grpcServer.GracefulStop()
@@ -74,6 +78,16 @@ func (s *Server) Shutdown(ctx context.Context) {
 		s.logger.Warn("forcing server shutdown")
 		s.grpcServer.Stop()
 	case <-stopped:
-		s.logger.Info("server stopped gracefully")
+		s.logger.Info("gRPC server stopped accepting new connections")
+	}
+
+	// Now close matching engine service to drain and shutdown clients
+	if s.matchingEngineSVC != nil {
+		// Provide a bounded timeout for service Close to avoid blocking shutdown indefinitely
+		closeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		if err := s.matchingEngineSVC.Close(closeCtx); err != nil {
+			s.logger.Warn("matching engine service close returned error", "err", err)
+		}
 	}
 }

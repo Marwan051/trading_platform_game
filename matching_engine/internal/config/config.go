@@ -7,22 +7,24 @@ import (
 )
 
 type Config struct {
-	GRPCAddr         string
-	Environment      string
-	ShutdownTimeout  time.Duration
-	ValkeyHost       string
-	ValkeyPort       int
-	ValkeyStreamName string
+	GRPCAddr             string
+	Environment          string
+	ShutdownTimeout      time.Duration
+	ValkeyHost           string
+	ValkeyPort           int
+	ValkeyStreamName     string
+	ValkeyRequestTimeout int
 }
 
 func Load() *Config {
 	return &Config{
-		GRPCAddr:         getEnv("GRPC_ADDR", ":50051"),
-		Environment:      getEnv("ENVIRONMENT", "development"),
-		ShutdownTimeout:  getDurationEnv("SHUTDOWN_TIMEOUT", 30*time.Second),
-		ValkeyHost:       getEnv("VALKEY_HOST", "localhost"),
-		ValkeyPort:       getIntEnv("VALKEY_PORT", 6379),
-		ValkeyStreamName: getEnv("VALKEY_STREAM_NAME", "matching_engine_stream"),
+		GRPCAddr:             getEnv("GRPC_ADDR", ":50051"),
+		Environment:          getEnv("ENVIRONMENT", "development"),
+		ShutdownTimeout:      getDurationEnv("SHUTDOWN_TIMEOUT", 30*time.Second),
+		ValkeyHost:           getEnv("VALKEY_HOST", "localhost"),
+		ValkeyPort:           getIntEnv("VALKEY_PORT", 6379),
+		ValkeyStreamName:     getEnv("VALKEY_STREAM_NAME", "matching_engine_stream"),
+		ValkeyRequestTimeout: getIntEnv("VALKEY_REQUEST_TIMEOUT_MS", 300),
 	}
 }
 

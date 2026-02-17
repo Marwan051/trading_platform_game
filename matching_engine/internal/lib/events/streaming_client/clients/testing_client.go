@@ -9,6 +9,9 @@ import (
 type TestStreamingClient struct {
 }
 
+func (*TestStreamingClient) IsHealthy(ctx context.Context) (bool, error) {
+	return true, nil
+}
 func (*TestStreamingClient) Publish(ctx context.Context, eventData any, eventType types.EventType) error {
 	return nil
 }

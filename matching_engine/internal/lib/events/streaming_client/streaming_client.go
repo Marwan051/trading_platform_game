@@ -9,6 +9,9 @@ import (
 // StreamingClient defines the interface for publishing events asynchronously.
 // Implementations should handle serialization, buffering, and delivery to the underlying stream.
 type StreamingClient interface {
+	// IsHealthy returns the state of the event streamer if it is healthy or not.
+	IsHealthy(ctx context.Context) (bool, error)
+
 	// Publish sends an event asynchronously. Returns immediately without blocking.
 	// The event will be serialized and sent to the stream by a background worker.
 	Publish(ctx context.Context, eventData any, eventType types.EventType) error

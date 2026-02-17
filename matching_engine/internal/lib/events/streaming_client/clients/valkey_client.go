@@ -2,9 +2,11 @@ package clients
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Marwan051/tradding_platform_game/matching_engine/internal/lib/events"
@@ -20,27 +22,32 @@ type eventPayload struct {
 }
 
 type ValkeyClient struct {
-	client     *glide.Client
-	streamName string
-	eventChan  chan eventPayload
-	ctx        context.Context
-	cancel     context.CancelFunc
-	wg         sync.WaitGroup
-	logger     *slog.Logger
-	maxRetries int
+	client          *glide.Client
+	isclientHealthy atomic.Bool
+	streamName      string
+	eventChan       chan eventPayload
+	ctx             context.Context
+	cancel          context.CancelFunc
+	wg              sync.WaitGroup
+	closeOnce       sync.Once
+	logger          *slog.Logger
+	maxRetries      int
+	enqueueTimeout  time.Duration
+	xaddTimeout     time.Duration
 }
 
 type ValkeyOptions struct {
-	ValkeyHost       string
-	ValkeyPort       int
-	ValkeyStreamName string
+	ValkeyHost             string
+	ValkeyPort             int
+	ValkeyStreamName       string
+	ValkeyRequestTimeoutMs int
 }
 
-func NewValkeyClient(host string, port int, streamName string, bufferSize int) (*ValkeyClient, error) {
+func NewValkeyClient(host string, port int, streamName string, bufferSize int, requestTimeout int) (*ValkeyClient, error) {
 	clientConfig := config.NewClientConfiguration().WithAddress(&config.NodeAddress{
 		Host: host,
 		Port: port,
-	})
+	}).WithRequestTimeout(time.Duration(requestTimeout) * time.Millisecond)
 
 	glideClient, err := glide.NewClient(clientConfig)
 	if err != nil {
@@ -57,11 +64,43 @@ func NewValkeyClient(host string, port int, streamName string, bufferSize int) (
 		logger:     slog.Default(),
 		maxRetries: 3,
 	}
+	// xaddTimeout comes from the provided requestTimeout (ms); fallback to 5s if zero
+	vc.xaddTimeout = time.Duration(requestTimeout) * time.Millisecond
+	if vc.xaddTimeout == 0 {
+		vc.xaddTimeout = 2 * time.Second
+	}
+	// enqueueTimeout uses the same configured request timeout by default
+	vc.enqueueTimeout = vc.xaddTimeout
+	vc.isclientHealthy.Store(true)
 
 	vc.wg.Add(1)
 	go vc.worker()
 
 	return vc, nil
+}
+
+// SetHealthy updates the client health status (thread-safe)
+func (vc *ValkeyClient) SetHealthy(healthy bool) {
+	vc.isclientHealthy.Store(healthy)
+}
+
+// GetHealthy returns the client health status (thread-safe)
+func (vc *ValkeyClient) GetHealthy() bool {
+	return vc.isclientHealthy.Load()
+}
+
+func (vc *ValkeyClient) IsHealthy(ctx context.Context) (bool, error) {
+	resp, err := vc.client.Ping(ctx)
+	if err != nil {
+		vc.SetHealthy(false)
+		return false, err
+	}
+	if resp == "PONG" {
+		vc.SetHealthy(true)
+		return true, nil
+	}
+	vc.SetHealthy(false)
+	return false, errors.New("Response message not expected")
 }
 
 // Pushes events to the event chan and waits for the worker to fulfil the requests
@@ -74,22 +113,37 @@ func (vc *ValkeyClient) Publish(ctx context.Context, eventData any, eventType ty
 		data:      data,
 		eventType: eventType,
 	}
-	select {
-	case vc.eventChan <- payload:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-vc.ctx.Done():
-		return vc.ctx.Err()
+	// Attempt to enqueue with a bounded timeout to avoid blocking producers indefinitely
+	sendFn := func() (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = errors.New("event channel closed")
+			}
+		}()
+
+		select {
+		case vc.eventChan <- payload:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-vc.ctx.Done():
+			return vc.ctx.Err()
+		case <-time.After(vc.enqueueTimeout):
+			return errors.New("enqueue timeout")
+		}
 	}
+
+	return sendFn()
 }
 
 func (vc *ValkeyClient) Close(ctx context.Context) error {
-	// Signal shutdown (prevents new Publish calls from succeeding)
-	vc.cancel()
-
-	// Close channel to signal worker to stop after draining
-	close(vc.eventChan)
+	// Use Once to prevent panic on double-close
+	vc.closeOnce.Do(func() {
+		// cancel first so Publish stops accepting new events
+		vc.cancel()
+		// closing the channel signals the worker to drain then exit
+		close(vc.eventChan)
+	})
 
 	// Wait for worker to finish processing all buffered events
 	done := make(chan struct{})
@@ -115,43 +169,86 @@ func (vc *ValkeyClient) worker() {
 	defer vc.wg.Done()
 
 	for payload := range vc.eventChan {
-		// Check if context is cancelled before processing
-		select {
-		case <-vc.ctx.Done():
-			vc.logger.Info("worker shutting down, context cancelled")
-			return
-		default:
-		}
+		// Keep trying to publish this event until it succeeds
+		for {
+			// Wait for client to be healthy before attempting to publish.
+			// If context is cancelled (shutdown), waitForHealthy returns immediately.
+			vc.waitForHealthy()
 
-		// Try to publish with retry logic
-		if err := vc.publishWithRetry(payload); err != nil {
-			vc.logger.Error("failed to publish event after retries",
+			// During shutdown: attempt once using a fresh context (not vc.ctx which is
+			// already cancelled) so XAdd can actually reach Valkey.
+			if vc.ctx.Err() != nil {
+				drainCtx, drainCancel := context.WithTimeout(context.Background(), vc.xaddTimeout)
+				if err := vc.publishWithRetry(drainCtx, payload); err != nil {
+					vc.logger.Warn("dropping event during shutdown after failed publish",
+						slog.Int("event_type", int(payload.eventType)),
+						slog.String("error", err.Error()),
+					)
+				}
+				drainCancel()
+				break // move to next buffered event
+			}
+
+			// Try to publish with retry logic
+			err := vc.publishWithRetry(vc.ctx, payload)
+			if err == nil {
+				// Success - move to next event
+				break
+			}
+
+			// Failed - mark unhealthy and loop to wait and retry
+			vc.logger.Error("failed to publish event after retries, will retry after health recovery",
 				slog.String("stream", vc.streamName),
 				slog.Int("event_type", int(payload.eventType)),
 				slog.String("error", err.Error()),
 				slog.Int("max_retries", vc.maxRetries),
 			)
-			// Event is dropped - could add to DLQ in production
+			vc.SetHealthy(false)
+			// Continue inner loop - will wait for health and retry same event
 		}
 	}
 
 	vc.logger.Info("worker finished processing all events")
 }
 
-func (vc *ValkeyClient) publishWithRetry(payload eventPayload) error {
+// waitForHealthy blocks until the client becomes healthy
+// External health checker will update isclientHealthy flag
+func (vc *ValkeyClient) waitForHealthy() {
+	checkInterval := 100 * time.Millisecond
+
+	for !vc.GetHealthy() {
+		// Check if context is cancelled
+		select {
+		case <-vc.ctx.Done():
+			vc.logger.Info("stopping health wait, context cancelled")
+			return
+		case <-time.After(checkInterval):
+			// Continue checking
+			if !vc.GetHealthy() {
+				vc.logger.Debug("waiting for client to become healthy")
+			}
+		}
+	}
+}
+
+func (vc *ValkeyClient) publishWithRetry(ctx context.Context, payload eventPayload) error {
 	var lastErr error
 	backoff := 50 * time.Millisecond
 
 	for attempt := 0; attempt <= vc.maxRetries; attempt++ {
 		// Check context before each retry
-		if vc.ctx.Err() != nil {
-			return fmt.Errorf("context cancelled during retry: %w", vc.ctx.Err())
+		if ctx.Err() != nil {
+			return fmt.Errorf("context cancelled during retry: %w", ctx.Err())
 		}
 
-		_, err := vc.client.XAdd(vc.ctx, vc.streamName, []models.FieldValue{
+		// Use a per-attempt timeout for the XAdd network call so a single hung attempt
+		// doesn't block retries indefinitely.
+		attemptCtx, cancel := context.WithTimeout(ctx, vc.xaddTimeout)
+		_, err := vc.client.XAdd(attemptCtx, vc.streamName, []models.FieldValue{
 			{Field: "type", Value: fmt.Sprintf("%d", payload.eventType)},
 			{Field: "data", Value: string(payload.data)},
 		})
+		cancel()
 
 		if err == nil {
 			if attempt > 0 {
@@ -178,8 +275,8 @@ func (vc *ValkeyClient) publishWithRetry(payload eventPayload) error {
 			select {
 			case <-time.After(backoff):
 				backoff *= 2
-			case <-vc.ctx.Done():
-				return fmt.Errorf("context cancelled during backoff: %w", vc.ctx.Err())
+			case <-ctx.Done():
+				return fmt.Errorf("context cancelled during backoff: %w", ctx.Err())
 			}
 		}
 	}

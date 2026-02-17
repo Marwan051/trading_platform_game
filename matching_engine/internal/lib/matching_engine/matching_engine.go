@@ -3,6 +3,7 @@ package matchingengine
 import (
 	"context"
 	"errors"
+	"log"
 	"sync"
 	"time"
 
@@ -19,6 +20,27 @@ type MatchingEngine struct {
 // NewMatchingEngine creates a new matching engine
 func NewMatchingEngine(streamer streamingclient.StreamingClient) *MatchingEngine {
 	return &MatchingEngine{eventStreamer: streamer}
+}
+
+func (me *MatchingEngine) IsEventStreamerHealthy(ctx context.Context) (bool, error) {
+	ok, err := me.eventStreamer.IsHealthy(ctx)
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
+
+// safePublish sends events with a bounded timeout and logs failures.
+// Keeps matching logic from blocking indefinitely on I/O.
+func (me *MatchingEngine) safePublish(evt any, et types.EventType) {
+	if me.eventStreamer == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	if err := me.eventStreamer.Publish(ctx, evt, et); err != nil {
+		log.Printf("event publish failed: %v, type=%d", err, int(et))
+	}
 }
 
 // getOrCreateOrderBook gets or creates an order book for a stock
@@ -47,7 +69,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 	// Minimal defensive checks to prevent panics
 	if order == nil {
 		if me.eventStreamer != nil {
-			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
+			me.safePublish(&types.OrderRejectedEvent{
 				OrderID:      "",
 				TraderID:     0,
 				Reason:       "Order is empty",
@@ -58,7 +80,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 	}
 	if order.StockTicker == "" {
 		if me.eventStreamer != nil {
-			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
+			me.safePublish(&types.OrderRejectedEvent{
 				OrderID:      "",
 				TraderID:     0,
 				Reason:       "Ticker is empty",
@@ -69,7 +91,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 	}
 	if order.OrderId == "" {
 		if me.eventStreamer != nil {
-			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
+			me.safePublish(&types.OrderRejectedEvent{
 				OrderID:      "",
 				TraderID:     0,
 				Reason:       "OrderId is empty",
@@ -80,7 +102,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 	}
 	if order.Quantity <= 0 {
 		if me.eventStreamer != nil {
-			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
+			me.safePublish(&types.OrderRejectedEvent{
 				OrderID:      order.OrderId,
 				TraderID:     order.TraderId,
 				Reason:       "Invalid quantity",
@@ -91,7 +113,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 	}
 	if order.OrderType == types.LimitOrder && order.LimitPrice <= 0 {
 		if me.eventStreamer != nil {
-			me.eventStreamer.Publish(context.Background(), &types.OrderRejectedEvent{
+			me.safePublish(&types.OrderRejectedEvent{
 				OrderID:      order.OrderId,
 				TraderID:     order.TraderId,
 				Reason:       "Invalid limit price",
@@ -109,7 +131,7 @@ func (me *MatchingEngine) SubmitOrder(order *types.Order) ([]types.MatchedEvent,
 
 	// Emit OrderPlacedEvent - order has been accepted
 	if me.eventStreamer != nil {
-		me.eventStreamer.Publish(context.Background(), &types.OrderPlacedEvent{
+		me.safePublish(&types.OrderPlacedEvent{
 			OrderID:         order.OrderId,
 			TraderID:        order.TraderId,
 			StockTicker:     order.StockTicker,
@@ -191,7 +213,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 			}
 			matches = append(matches, match)
 			if me.eventStreamer != nil {
-				me.eventStreamer.Publish(context.Background(), &types.TradeExecutedEvent{
+				me.safePublish(&types.TradeExecutedEvent{
 					StockTicker:     buyOrder.StockTicker,
 					BuyerOrderID:    buyOrder.OrderId,
 					SellerOrderID:   sellOrder.OrderId,
@@ -216,7 +238,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 			if sellOrder.Quantity == 0 {
 				// Resting sell order fully filled
 				if me.eventStreamer != nil {
-					_ = me.eventStreamer.Publish(context.Background(), &types.OrderFilledEvent{
+					me.safePublish(&types.OrderFilledEvent{
 						OrderID:        sellOrder.OrderId,
 						TraderID:       sellOrder.TraderId,
 						Quantity:       originalSellQty,
@@ -227,7 +249,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 			} else {
 				// Resting sell order partially filled
 				if me.eventStreamer != nil {
-					_ = me.eventStreamer.Publish(context.Background(), &types.OrderPartiallyFilledEvent{
+					me.safePublish(&types.OrderPartiallyFilledEvent{
 						OrderID:           sellOrder.OrderId,
 						TraderID:          sellOrder.TraderId,
 						FilledQuantity:    matchQty,
@@ -242,7 +264,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 	// Emit OrderFilledEvent for incoming buy order if fully consumed
 	if remainingQty == 0 && originalBuyQty > 0 {
 		if me.eventStreamer != nil {
-			_ = me.eventStreamer.Publish(context.Background(), &types.OrderFilledEvent{
+			me.safePublish(&types.OrderFilledEvent{
 				OrderID:        buyOrder.OrderId,
 				TraderID:       buyOrder.TraderId,
 				Quantity:       originalBuyQty,
@@ -252,7 +274,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 	} else if remainingQty > 0 && remainingQty < originalBuyQty {
 		// Emit single partial event for incoming buy order if partially filled
 		if me.eventStreamer != nil {
-			_ = me.eventStreamer.Publish(context.Background(), &types.OrderPartiallyFilledEvent{
+			me.safePublish(&types.OrderPartiallyFilledEvent{
 				OrderID:           buyOrder.OrderId,
 				TraderID:          buyOrder.TraderId,
 				FilledQuantity:    originalBuyQty - remainingQty,
@@ -265,7 +287,7 @@ func (me *MatchingEngine) matchBuyOrder(book *types.StockOrderBook, buyOrder *ty
 	// Market orders: cancel unfilled portion (IOC behavior)
 	if remainingQty > 0 && buyOrder.OrderType == types.MarketOrder {
 		if me.eventStreamer != nil {
-			_ = me.eventStreamer.Publish(context.Background(), &types.OrderCancelledEvent{
+			me.safePublish(&types.OrderCancelledEvent{
 				OrderID:           buyOrder.OrderId,
 				TraderID:          buyOrder.TraderId,
 				OrderType:         buyOrder.OrderType,
@@ -325,7 +347,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 
 			// Emit trade executed event
 			if me.eventStreamer != nil {
-				_ = me.eventStreamer.Publish(context.Background(), &types.TradeExecutedEvent{
+				me.safePublish(&types.TradeExecutedEvent{
 					StockTicker:     sellOrder.StockTicker,
 					BuyerOrderID:    buyOrder.OrderId,
 					SellerOrderID:   sellOrder.OrderId,
@@ -346,7 +368,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 			if buyOrder.Quantity == 0 {
 				// Resting buy order fully filled
 				if me.eventStreamer != nil {
-					_ = me.eventStreamer.Publish(context.Background(), &types.OrderFilledEvent{
+					me.safePublish(&types.OrderFilledEvent{
 						OrderID:        buyOrder.OrderId,
 						TraderID:       buyOrder.TraderId,
 						Quantity:       originalBuyQty,
@@ -357,7 +379,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 			} else {
 				// Resting buy order partially filled
 				if me.eventStreamer != nil {
-					_ = me.eventStreamer.Publish(context.Background(), &types.OrderPartiallyFilledEvent{
+					me.safePublish(&types.OrderPartiallyFilledEvent{
 						OrderID:           buyOrder.OrderId,
 						TraderID:          buyOrder.TraderId,
 						FilledQuantity:    matchQty,
@@ -372,7 +394,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 	// Emit OrderFilledEvent for incoming sell order if fully consumed
 	if remainingQty == 0 && originalSellQty > 0 {
 		if me.eventStreamer != nil {
-			_ = me.eventStreamer.Publish(context.Background(), &types.OrderFilledEvent{
+			me.safePublish(&types.OrderFilledEvent{
 				OrderID:        sellOrder.OrderId,
 				TraderID:       sellOrder.TraderId,
 				Quantity:       originalSellQty,
@@ -382,7 +404,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 	} else if remainingQty > 0 && remainingQty < originalSellQty {
 		// Emit single partial event for incoming sell order if partially filled
 		if me.eventStreamer != nil {
-			_ = me.eventStreamer.Publish(context.Background(), &types.OrderPartiallyFilledEvent{
+			me.safePublish(&types.OrderPartiallyFilledEvent{
 				OrderID:           sellOrder.OrderId,
 				TraderID:          sellOrder.TraderId,
 				FilledQuantity:    originalSellQty - remainingQty,
@@ -395,7 +417,7 @@ func (me *MatchingEngine) matchSellOrder(book *types.StockOrderBook, sellOrder *
 	// Market orders: cancel unfilled portion (IOC behavior)
 	if remainingQty > 0 && sellOrder.OrderType == types.MarketOrder {
 		if me.eventStreamer != nil {
-			_ = me.eventStreamer.Publish(context.Background(), &types.OrderCancelledEvent{
+			me.safePublish(&types.OrderCancelledEvent{
 				OrderID:           sellOrder.OrderId,
 				TraderID:          sellOrder.TraderId,
 				OrderType:         sellOrder.OrderType,
@@ -450,7 +472,7 @@ func (me *MatchingEngine) CancelOrder(stock, orderId string, side types.OrderSid
 	}
 
 	if me.eventStreamer != nil {
-		_ = me.eventStreamer.Publish(context.Background(), &types.OrderCancelledEvent{
+		me.safePublish(&types.OrderCancelledEvent{
 			OrderID:           order.OrderId,
 			TraderID:          order.TraderId,
 			OrderType:         order.OrderType,

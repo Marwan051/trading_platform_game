@@ -4,7 +4,7 @@ The **Matching Engine** is the high-performance core of the Trading Platform Gam
 
 Built with **Go**, it prioritizes correctness and speed, ensuring fair execution based on **Price-Time Priority (FIFO)**.
 
-## 🚀 Key Features
+## Key Features
 
 - **High Concurrency**: Independent order books for each stock allow parallel processing without lock contention.
 - **Price-Time Priority**: Strictly follows FIFO rules—orders at the same price are matched based on arrival time.
